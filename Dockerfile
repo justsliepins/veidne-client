@@ -4,6 +4,15 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 
+# Build-time configuration. The public repository tracks no .env.production,
+# so the production values are passed in by the deployment as build args and
+# exported for `vite build`, which reads VITE_-prefixed variables from the
+# environment. An empty VITE_CONVERT_API_URL disables the PDF feature.
+ARG VITE_CONVERT_API_URL=
+ARG VITE_IMAGE_FIELDS=
+ENV VITE_CONVERT_API_URL=$VITE_CONVERT_API_URL
+ENV VITE_IMAGE_FIELDS=$VITE_IMAGE_FIELDS
+
 COPY . .
 RUN npm run build
 
