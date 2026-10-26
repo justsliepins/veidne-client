@@ -1,7 +1,7 @@
 export interface WordToken {
   id: string;
   text: string;
-  type: 'word' | 'space' | 'newline' | 'pageBreak' | 'image' | 'htmlBlock' | 'unsupported';
+  type: 'word' | 'space' | 'newline' | 'pageBreak' | 'image' | 'unsupported';
   paragraphIndex: number;
   /** Image tokens only: text holds the object URL; the fields below carry the
    *  drawing's identity so later steps can tag and swap it. */

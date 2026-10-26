@@ -28,12 +28,11 @@ interface DocumentAreaProps {
 
 interface ParagraphBlock { type: 'paragraph'; tokens: WordToken[] }
 interface PageBreakBlock { type: 'pageBreak'; token: WordToken }
-interface HtmlBlock { type: 'html'; token: WordToken }
 interface UnsupportedBlock { type: 'unsupported'; token: WordToken }
 interface TableCell { row: number; col: number; rowSpan: number; colSpan: number; tokens: WordToken[] }
 interface TableBlock { type: 'table'; tableId: string; colWidths?: number[]; cells: TableCell[] }
 
-type DocBlock = ParagraphBlock | PageBreakBlock | HtmlBlock | UnsupportedBlock | TableBlock;
+type DocBlock = ParagraphBlock | PageBreakBlock | UnsupportedBlock | TableBlock;
 
 function buildBlocks(wordTokens: WordToken[]): DocBlock[] {
   const blocks: DocBlock[] = [];
@@ -99,11 +98,6 @@ function buildBlocks(wordTokens: WordToken[]): DocBlock[] {
     if (tok.type === 'pageBreak') {
       flushParagraph();
       blocks.push({ type: 'pageBreak', token: tok });
-      continue;
-    }
-    if (tok.type === 'htmlBlock') {
-      flushParagraph();
-      blocks.push({ type: 'html', token: tok });
       continue;
     }
     if (tok.type === 'unsupported') {
@@ -567,8 +561,6 @@ export function DocumentArea({ previewMode = false, getFilledValue, transitionBe
           switch (block.type) {
             case 'pageBreak':
               return <div key={i} className={s.pageBreak}><span className={s.pageBreakLabel}>{t('editor.pageBreak')}</span></div>;
-            case 'html':
-              return <div key={i} dangerouslySetInnerHTML={{ __html: block.token.text }} />;
             case 'unsupported':
               return <div key={i} className={s.unsupported}>{block.token.text}</div>;
             case 'table':
