@@ -1,0 +1,1 @@
+export { CoachingStrip } from './CoachingStrip';

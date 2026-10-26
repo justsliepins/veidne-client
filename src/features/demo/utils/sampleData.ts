@@ -1,0 +1,28 @@
+export const SAMPLE_COLUMNS = ['Name', 'Office'];
+
+export const SAMPLE_ROWS: Record<string, string>[] = [
+  { Name: 'Emily Rodriguez', Office: 'Austin Office' },
+  { Name: 'Marcus Chen', Office: 'Portland Office' },
+  { Name: 'Aisha Patel', Office: 'London Office' },
+  { Name: "James O'Brien", Office: 'Dublin Office' },
+  { Name: 'Sofia Nakamura', Office: 'Tokyo Office' },
+  { Name: 'Lucas Weber', Office: 'Berlin Office' },
+  { Name: 'Priya Sharma', Office: 'Mumbai Office' },
+  { Name: 'Daniel Kim', Office: 'Seoul Office' },
+  { Name: 'Olivia Thompson', Office: 'Sydney Office' },
+  { Name: 'Ahmed Hassan', Office: 'Cairo Office' },
+  { Name: 'Isabella Costa', Office: 'Lisbon Office' },
+  { Name: 'Nathan Wright', Office: 'Toronto Office' },
+  { Name: 'Yuki Tanaka', Office: 'Osaka Office' },
+  { Name: 'Elena Volkov', Office: 'Moscow Office' },
+  { Name: 'Carlos Mendez', Office: 'Mexico City Office' },
+  { Name: 'Fatima Al-Rashid', Office: 'Dubai Office' },
+  { Name: 'Benjamin Park', Office: 'Singapore Office' },
+  { Name: 'Hannah Mueller', Office: 'Munich Office' },
+  { Name: 'David Okafor', Office: 'Lagos Office' },
+  { Name: 'Maria Santos', Office: 'Sao Paulo Office' },
+  { Name: 'Alexander Novak', Office: 'Prague Office' },
+  { Name: 'Claire Dubois', Office: 'Paris Office' },
+  { Name: 'Ryan Mitchell', Office: 'Chicago Office' },
+  { Name: 'Mei-Lin Wong', Office: 'Hong Kong Office' },
+];

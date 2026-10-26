@@ -1,0 +1,1 @@
+export { BulkDocumentGeneration } from './BulkDocumentGeneration';

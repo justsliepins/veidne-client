@@ -1,0 +1,1 @@
+export { MailMergeWithoutWord } from './MailMergeWithoutWord';

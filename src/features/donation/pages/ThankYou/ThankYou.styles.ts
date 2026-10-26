@@ -1,0 +1,67 @@
+import { makeStyles, shorthands, tokens } from '@fluentui/react-components';
+import { veidneTypography } from '@/design-system/tokens';
+import { media } from '@/design-system/responsive';
+
+export const useThankYouStyles = makeStyles({
+  root: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    maxWidth: '640px',
+    marginLeft: 'auto',
+    marginRight: 'auto',
+    paddingTop: '80px',
+    paddingBottom: '80px',
+    paddingLeft: '48px',
+    paddingRight: '48px',
+    gap: '32px',
+    [media.below.lg]: { paddingTop: '48px', paddingBottom: '48px', paddingLeft: '24px', paddingRight: '24px' },
+    [media.below.sm]: { paddingTop: '40px', paddingBottom: '40px', paddingLeft: '16px', paddingRight: '16px', gap: '24px' },
+  },
+  title: {
+    ...veidneTypography.h1, color: tokens.colorNeutralForeground1, textAlign: 'center',
+    [media.below.lg]: { fontSize: '36px', lineHeight: '44px' },
+    [media.below.sm]: { fontSize: '28px', lineHeight: '36px' },
+  },
+  body: { ...veidneTypography.bodyLarge, color: tokens.colorNeutralForeground2, textAlign: 'center' },
+  receipt: { ...veidneTypography.bodyRegular, color: tokens.colorNeutralForeground2, textAlign: 'center' },
+  card: {
+    width: '100%',
+    boxSizing: 'border-box',
+    padding: '30px',
+    [media.below.sm]: { padding: '20px' },
+    borderRadius: '18px',
+    backgroundColor: '#FFFFFF',
+    backgroundImage: 'linear-gradient(180deg, #FFFFFF, #FCFCFF)',
+    border: '1px solid rgba(26, 22, 34, 0.06)',
+    boxShadow: '0 1px 2px rgba(60, 50, 70, 0.04), 0 14px 34px -18px rgba(60, 50, 70, 0.22)',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '16px',
+  },
+  cardTitle: { ...veidneTypography.h3, color: tokens.colorNeutralForeground1 },
+  cardBody: { ...veidneTypography.bodyRegular, color: tokens.colorNeutralForeground2 },
+  label: { fontSize: '13px', lineHeight: '20px', fontWeight: 600, color: '#1A1622', marginBottom: '6px', display: 'block' },
+  textarea: {
+    width: '100%', minHeight: '120px', borderRadius: '6px', boxSizing: 'border-box',
+    ...shorthands.borderStyle('solid'), ...shorthands.borderWidth('1px'), ...shorthands.borderColor('#E8E8F0'),
+    padding: '12px 16px', fontSize: '15px', lineHeight: '24px', fontWeight: 400, color: '#1A1622',
+    outlineStyle: 'none', resize: 'vertical', fontFamily: 'inherit',
+    ':focus': { ...shorthands.borderColor('#46529E') },
+  },
+  cta: {
+    alignSelf: 'flex-start', padding: '12px 24px', borderRadius: '6px',
+    backgroundColor: '#5566C4', ...shorthands.borderStyle('none'),
+    fontSize: '14px', fontWeight: 600, color: '#FFFFFF', cursor: 'pointer',
+    ':hover': { backgroundColor: '#6B7CCE' },
+    ':disabled': { opacity: '0.6', cursor: 'not-allowed' },
+  },
+  success: { fontSize: '15px', lineHeight: '24px', fontWeight: 400, color: '#15803D' },
+  error: { fontSize: '13px', lineHeight: '20px', fontWeight: 400, color: '#EF4444' },
+  onward: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' },
+  otherTab: { ...veidneTypography.bodyRegular, color: tokens.colorNeutralForeground2, textAlign: 'center' },
+  another: {
+    ...veidneTypography.bodyRegular, fontWeight: 600, color: '#46529E', textDecorationLine: 'none',
+    ':hover': { textDecorationLine: 'underline' },
+  },
+});

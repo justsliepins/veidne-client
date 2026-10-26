@@ -1,0 +1,1 @@
+export { DonateInline } from './DonateInline';

@@ -1,0 +1,1 @@
+export { DocumentPaper } from './DocumentPaper';

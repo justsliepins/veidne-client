@@ -1,0 +1,1 @@
+export { ClickableWord } from './ClickableWord';

@@ -1,0 +1,1 @@
+export { PlaceholderSidebar } from './PlaceholderSidebar';

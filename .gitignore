@@ -1,0 +1,49 @@
+# Dependencies
+node_modules
+
+# Build output
+dist
+dist-ssr
+*.tsbuildinfo
+
+# Environment files. Vite only exposes VITE_-prefixed variables, but real
+# values still never belong in git. .env.example is the documented template
+# and is the only env file that stays tracked.
+.env
+.env.*
+!.env.example
+*.local
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Playwright
+/test-results/
+/playwright-report/
+/e2e/.artifacts/
+/e2e/screenshots/
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Local tool settings
+.claude/settings.local.json

@@ -1,0 +1,1 @@
+export { GenerateWordDocumentsFromExcel } from './GenerateWordDocumentsFromExcel';

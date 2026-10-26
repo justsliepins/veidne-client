@@ -1,0 +1,1 @@
+export { MatchDataScreen } from './MatchDataScreen';
