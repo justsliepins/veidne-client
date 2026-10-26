@@ -27,6 +27,12 @@ export const useAboutStyles = makeStyles({
   costsHeading: { ...veidneTypography.h3, color: tokens.colorNeutralForeground1, textAlign: 'left' },
   storyParagraph: { ...veidneTypography.bodyLarge, color: tokens.colorNeutralForeground2, textAlign: 'left' },
   boldText: { fontWeight: 700 },
+  // Same treatment as the external links in the donation components.
+  inlineLink: {
+    color: '#5566C4', fontWeight: 500, textDecorationLine: 'underline', overflowWrap: 'anywhere',
+    ':hover': { color: '#46529E' },
+    ':focus-visible': { outlineWidth: '2px', outlineStyle: 'solid', outlineColor: '#5566C4', outlineOffset: '2px' },
+  },
   founders: {
     display: 'flex',
     flexDirection: 'column',

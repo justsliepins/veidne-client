@@ -32,6 +32,13 @@ export function About() {
             {t('about.story.p4end')}
           </p>
           <p className={styles.storyParagraph}>{t('about.story.pdf')}</p>
+          <p className={styles.storyParagraph}>
+            {t('about.story.openSourceStart')}
+            <a className={styles.inlineLink} href="https://github.com/justsliepins/veidne-client" target="_blank" rel="noopener noreferrer">
+              {t('about.story.openSourceLink')}
+            </a>
+            {t('about.story.openSourceEnd')}
+          </p>
           <p className={styles.storyParagraph}>{t('about.story.p5')}</p>
         </section>
 
