@@ -42,7 +42,7 @@ PDF export, the one exception. The PDF feature works only when the build has `VI
 
 Fonts. No web font is loaded. The Fluent UI provider that wraps every page applies its system font stack to the content, and `src/design-system/global.css` sets the same stack on `body` on purpose, so a page load requests nothing from a font service or any other third party. Earlier versions imported a Google Fonts stylesheet that was never actually used for rendering; that import was the only third-party request a page load made, and it is gone.
 
-Nothing else. No analytics script, tag manager, error reporter, chat widget, service worker or web worker is loaded. `index.html` contains page metadata, structured data and the application bundle only. The review-site links in the donation components are ordinary links that the user may click.
+Nothing else. No analytics script, tag manager, error reporter, chat widget, service worker or web worker is loaded. `index.html` contains page metadata, structured data and the application bundle only. The Trustpilot review links in the donation components, the site footer and the generate error message are ordinary links that the user may click.
 
 ## Build and run
 

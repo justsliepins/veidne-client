@@ -12,6 +12,8 @@ import { CompletionBar } from '@/shared/components/CompletionBar';
 import { DropZone } from '@/shared/components/DropZone';
 import { VeidneButton } from '@/shared/components/VeidneButton';
 import { ErrorToast } from '@/shared/components/ErrorToast';
+import { BugReportModal } from '@/features/bug-report/components/BugReportModal';
+import { TRUSTPILOT_REVIEW_URL } from '@/config/constants';
 import { useEditorStore } from '../../store/editorStore';
 import { useDataStore, type EditorPhase, type DataSubState } from '@/features/data/store/dataStore';
 import { useGeneratorStore } from '@/features/generator/store/generatorStore';
@@ -87,6 +89,12 @@ export function Editor() {
     () => typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches,
   );
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  // A failed generation is the one error that offers follow-ups: the private
+  // bug-report channel first, then the same review link every other surface
+  // uses, so the invitation does not depend on the outcome.
+  const [generateFailed, setGenerateFailed] = useState(false);
+  const [bugReportOpen, setBugReportOpen] = useState(false);
+  const dismissError = useCallback(() => { setErrorMsg(null); setGenerateFailed(false); }, []);
   // Brief parsing indicator for the upload drop zones.
   const [parsing, setParsing] = useState(false);
   // First-run, one-time field nudge: shown once ever, never reappears after the
@@ -278,7 +286,12 @@ export function Editor() {
     trackEvent('generate_started', useDataStore.getState().isSampleData ? { sample: true } : undefined);
     if (!rawDocxBytes) return;
     try { await generate(rawDocxBytes, placeholders, rows, columnMapping, fileName ?? 'document.docx'); }
-    catch { setErrorMsg(t('error.generate')); return; }
+    catch {
+      setErrorMsg(t('error.generate'));
+      setGenerateFailed(true);
+      trackEvent('review_ask_shown', { variant: 'error' });
+      return;
+    }
     // generate() resolves normally on cancel too (the loop just stops and the
     // phase goes back to 'preview'), so a cancelled run must not count as
     // completed. Only a run that actually reached 'done' is reported.
@@ -433,7 +446,19 @@ export function Editor() {
           onApply={applyMapping} onCancel={cancelMapping} onReupload={handleExcelFile} />}
         <PicturesModal />
         <GenerateProgressModal open={isGenerating} onCancel={cancel} />
-        <ErrorToast message={errorMsg ?? ''} visible={!!errorMsg} onDismiss={() => setErrorMsg(null)} />
+        <ErrorToast message={errorMsg ?? ''} visible={!!errorMsg} onDismiss={dismissError}
+          actions={generateFailed && !!errorMsg && (
+            <>
+              <button type="button" className={s.errorActionBtn} onClick={() => setBugReportOpen(true)}>
+                {t('error.generate.report')}
+              </button>
+              <a className={s.errorActionLink} href={TRUSTPILOT_REVIEW_URL} target="_blank" rel="noopener noreferrer"
+                onClick={() => trackEvent('review_trustpilot_clicked', { source: 'error' })}>
+                {t('error.generate.review')}
+              </a>
+            </>
+          )} />
+        <BugReportModal open={bugReportOpen} onClose={() => setBugReportOpen(false)} />
       </div>
     </PageLayout>
   );

@@ -150,4 +150,16 @@ export const useStyles = makeStyles({
       boxShadow: '0 -6px 18px -12px rgba(26,22,34,.35)',
     },
   },
+  // Follow-up actions inside the generate error toast.
+  errorActionBtn: {
+    ...shorthands.borderStyle('none'), backgroundColor: 'transparent', padding: '0', cursor: 'pointer',
+    fontSize: '14px', lineHeight: '20px', fontWeight: 600, color: '#46529E',
+    ':hover': { textDecorationLine: 'underline' },
+    ':focus-visible': { outlineWidth: '2px', outlineStyle: 'solid', outlineColor: '#5566C4', outlineOffset: '2px' },
+  },
+  errorActionLink: {
+    fontSize: '14px', lineHeight: '20px', fontWeight: 500, color: '#46529E', textDecorationLine: 'underline',
+    ':hover': { color: '#5566C4' },
+    ':focus-visible': { outlineWidth: '2px', outlineStyle: 'solid', outlineColor: '#5566C4', outlineOffset: '2px' },
+  },
 });

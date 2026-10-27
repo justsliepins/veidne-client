@@ -1,4 +1,4 @@
-import { makeStyles } from '@fluentui/react-components';
+import { makeStyles, shorthands } from '@fluentui/react-components';
 import { media } from '@/design-system/responsive';
 import { veidneTokens } from '@/design-system/tokens';
 
@@ -28,4 +28,14 @@ export const useStyles = makeStyles({
   },
   icon: { color: '#EF4444', fontSize: '16px', flexShrink: 0 },
   message: { fontSize: '14px', lineHeight: '20px', fontWeight: 400, color: '#1A1622' },
+  // With actions the toast becomes a small panel: message row on top, the
+  // actions underneath, and it stays until dismissed.
+  withActions: { flexDirection: 'column', alignItems: 'stretch', gap: '10px' },
+  row: { display: 'flex', alignItems: 'center', gap: '12px' },
+  closeBtn: {
+    marginLeft: 'auto', flexShrink: 0, ...shorthands.borderStyle('none'), backgroundColor: 'transparent',
+    cursor: 'pointer', color: '#5E5560', display: 'flex', alignItems: 'center', padding: '0',
+    ':focus-visible': { outlineWidth: '2px', outlineStyle: 'solid', outlineColor: '#5566C4', outlineOffset: '2px' },
+  },
+  actions: { display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '8px 16px', paddingLeft: '28px' },
 });

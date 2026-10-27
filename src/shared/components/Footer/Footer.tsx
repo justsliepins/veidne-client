@@ -1,5 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useTranslation } from '@/i18n/useTranslation';
+import { trackEvent } from '@/services/analyticsService';
+import { TRUSTPILOT_REVIEW_URL } from '@/config/constants';
 import { useTemplateStore } from '@/features/templates/store/templateStore';
 import { useFooterStyles } from './Footer.styles';
 
@@ -26,6 +28,10 @@ export function Footer() {
         </button>
         <Link to="/roadmap" className={styles.link}>{t('nav.roadmap')}</Link>
         <Link to="/about" className={styles.link}>{t('footer.about')}</Link>
+        <a className={styles.link} href={TRUSTPILOT_REVIEW_URL} target="_blank" rel="noopener noreferrer"
+          onClick={() => trackEvent('review_trustpilot_clicked', { source: 'footer' })}>
+          {t('footer.review')}
+        </a>
       </nav>
       {/* Funding line: a quiet fact at the very bottom, never a banner and not
           dismissible. The editor hides the whole footer, so it never shows there. */}

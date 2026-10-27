@@ -2,12 +2,12 @@ import { useEffect } from 'react';
 import { Dismiss24Regular } from '@fluentui/react-icons';
 import { t } from '@/i18n/i18n';
 import { trackEvent } from '@/services/analyticsService';
+import { TRUSTPILOT_REVIEW_URL } from '@/config/constants';
 import { DonateInline } from '../DonateInline';
 import { useStyles } from './DownloadCompleteModal.styles';
 
-// Same review destination as ReviewAsk; opened in a new tab so the just-saved
-// download and this surface stay put.
-const TRUSTPILOT_REVIEW_URL = 'https://www.trustpilot.com/evaluate/veidne.com';
+// The review link opens in a new tab so the just-saved download and this
+// surface stay put.
 
 interface DownloadCompleteModalProps {
   open: boolean;

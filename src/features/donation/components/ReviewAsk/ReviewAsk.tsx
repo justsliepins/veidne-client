@@ -1,11 +1,11 @@
 import { useEffect, useRef } from 'react';
 import { t } from '@/i18n/i18n';
 import { trackEvent } from '@/services/analyticsService';
+import { TRUSTPILOT_REVIEW_URL } from '@/config/constants';
 import { useStyles } from './ReviewAsk.styles';
 
-// Public Trustpilot review form for Veidne. Opened in a new tab (same new-tab
-// intent as DonateInline) so the user's generated files stay in the current tab.
-const TRUSTPILOT_REVIEW_URL = 'https://www.trustpilot.com/evaluate/veidne.com';
+// The review form opens in a new tab (same new-tab intent as DonateInline) so
+// the user's generated files stay in the current tab.
 
 const FEEDBACK_MAILTO = 'mailto:info@veidne.com?subject=My%20Veidne%20review';
 
