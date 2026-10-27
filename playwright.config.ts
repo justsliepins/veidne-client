@@ -35,14 +35,12 @@ export default defineConfig({
   webServer: [
     {
       command: 'npm run dev -- --port 5173 --strictPort',
-      env: { VITE_E2E: '1' },
       url: FEATURE_ON_URL,
       reuseExistingServer: !process.env.CI,
       timeout: 120_000,
     },
     {
       command: 'npm run dev -- --mode darklaunch --port 5181 --strictPort',
-      env: { VITE_E2E: '1' },
       url: DARK_LAUNCH_URL,
       reuseExistingServer: !process.env.CI,
       timeout: 120_000,

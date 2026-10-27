@@ -10,7 +10,6 @@ import { useEditorStore } from '@/features/editor/store/editorStore';
 import { useDataStore } from '@/features/data/store/dataStore';
 import { useGeneratorStore } from '../../store/generatorStore';
 import { downloadTaggedTemplate, downloadUploadedSpreadsheet } from '../../utils/sourceFiles';
-import { rollFileModal } from '../../utils/fileModalRoll';
 import { usePdfStore } from '../../store/pdfStore';
 import { DonateInline } from '@/features/donation/components/DonateInline';
 import { ReviewAsk } from '@/features/donation/components/ReviewAsk';
@@ -51,9 +50,14 @@ function rememberSupportAskSeen(): void {
 // Quiet time after a single-file download before the modal may open, so a
 // file-by-file run is never interrupted mid-way.
 const FILE_MODAL_DELAY_MS = 4000;
-// Chance that one single-file download opens the modal. Bulk and PDF
-// downloads open it every time; a file from the list is a smaller moment.
-const FILE_MODAL_CHANCE = 0.1;
+
+// The post-download modal opens once per kind of download per run: a bulk
+// Word download, a PDF download and a single file from the list each open it
+// the first time they happen in a run and not again. Keyed on the run's
+// generated files array, at module level rather than in state or a ref,
+// because the Done screen can mount more than once for one run.
+type DownloadKind = 'word' | 'pdf' | 'file';
+const downloadModalOpenedForRun: Record<DownloadKind, object | null> = { word: null, pdf: null, file: null };
 
 export function DoneView({ isDemo }: DoneViewProps) {
   const s = useStyles();
@@ -82,10 +86,12 @@ export function DoneView({ isDemo }: DoneViewProps) {
   // screen: the modal while open, nothing afterwards.
   const [modalShownForRun, setModalShownForRun] = useState<object | null>(null);
   // Open the post-download modal for real runs only (never sample or demo
-  // data). No cap: the bulk and PDF downloads open it every time they finish.
-  // The inline ReviewAsk remains available either way.
-  const maybeShowDownloadModal = useCallback((source: string) => {
+  // data), once per download kind per run. The inline ReviewAsk remains
+  // available either way.
+  const maybeShowDownloadModal = useCallback((source: DownloadKind) => {
     if (isSampleData || generatedFiles.length === 0) return;
+    if (downloadModalOpenedForRun[source] === generatedFiles) return;
+    downloadModalOpenedForRun[source] = generatedFiles;
     setModalShownForRun(generatedFiles);
     setDownloadModalSource(source);
     setDownloadModalOpen(true);
@@ -114,16 +120,15 @@ export function DoneView({ isDemo }: DoneViewProps) {
     fileModalArmed.current = false;
     maybeShowDownloadModal('pdf');
   }, [clearFileModalTimer, maybeShowDownloadModal]);
-  // A single file from the list: each download rolls a 10 percent chance. A
-  // win arms the modal, but someone saving seven files one by one must never
-  // get it over the list mid-task, so every further download in the sequence
-  // resets a short timer and the modal opens only once downloads have stopped.
-  // The bulk and PDF downloads above open it at once, since nothing is left to
-  // do after them.
+  // A single file from the list arms the modal, but someone saving seven files
+  // one by one must never get it over the list mid-task, so every further
+  // download in the sequence resets a short timer and the modal opens only
+  // once downloads have stopped. The once-per-kind guard above then keeps it
+  // from returning for later files in the run. The bulk and PDF downloads
+  // above open it at once, since nothing is left to do after them.
   const noteSingleDownload = useCallback(() => {
     clearFileModalTimer();
-    if (rollFileModal(FILE_MODAL_CHANCE)) fileModalArmed.current = true;
-    if (!fileModalArmed.current) return;
+    fileModalArmed.current = true;
     fileModalTimer.current = setTimeout(() => {
       fileModalTimer.current = null;
       fileModalArmed.current = false;
