@@ -23,10 +23,12 @@ interface DoneViewProps {
   isDemo?: boolean;
 }
 
-// Whether the user has already seen the full support/review ask. This controls
-// the prominence of the review card (full vs condensed one-liner), never its
-// presence. localStorage can throw in private mode, so every access is guarded;
-// any failure means "not seen" (show the full card) and we simply skip writing.
+// Whether the user has already had the full review card on screen. The
+// condensed one-line ask shows under the download actions on every real run;
+// the full card additionally shows below the donate card until it has actually
+// been seen once, which ReviewAsk's visibility observer reports. localStorage
+// can throw in private mode, so every access is guarded; any failure means
+// "not seen" (show the full card) and we simply skip writing.
 const SUPPORT_ASK_KEY = 'veidne_supportAskSeen';
 const SUPPORT_ASK_VALUE = '1';
 
@@ -45,13 +47,6 @@ function rememberSupportAskSeen(): void {
     /* private mode or storage full: proceed without remembering */
   }
 }
-
-// Identity of the generation run the ask was last marked seen for. The Done
-// screen can mount more than once for one run (the PDF consent gate, and the
-// stale-phase remount of Editor that renders it for a commit with the previous
-// run's files still in the store), so the marker is tied to the run rather
-// than to the mount. Same mechanism as DonateInline's donation_ask_shown.
-let supportAskMarkedForRun: object | null = null;
 
 // Quiet time after a single-file download before the modal may open, so a
 // file-by-file run is never interrupted mid-way.
@@ -75,17 +70,11 @@ export function DoneView({ isDemo }: DoneViewProps) {
   // PDF feature gate: null converter URL means render zero new UI (today's app).
   const pdfOn = getConvertApiUrl() !== null;
   const pdfPhase = usePdfStore((s) => s.phase);
-  // Read once at mount: first non-demo completion shows the full review card,
-  // every later one shows the condensed line. Presence is unconditional.
-  const [reviewCondensed] = useState(isSupportAskSeen);
-  // Mark the ask as seen so subsequent visits condense. Gated on the review card
-  // actually being shown (non-demo branches), so a demo completion does not
-  // consume the first-time full card, and on a real run with files, once per run.
-  useEffect(() => {
-    if (isDemo || generatedFiles.length === 0 || generatedFiles === supportAskMarkedForRun) return;
-    supportAskMarkedForRun = generatedFiles;
-    rememberSupportAskSeen();
-  }, [isDemo, generatedFiles]);
+  // Read once at mount: until the full review card has been seen once, a real
+  // completion shows it below the donate card. Written only when the card has
+  // actually been on screen, so a visitor who never scrolled down still gets
+  // it next time.
+  const [fullCardSeen] = useState(isSupportAskSeen);
   const [downloadModalOpen, setDownloadModalOpen] = useState(false);
   const [downloadModalSource, setDownloadModalSource] = useState('word');
   // The run the modal has opened for, if any. While it matches the current run
@@ -172,11 +161,15 @@ export function DoneView({ isDemo }: DoneViewProps) {
   const showAsk = generatedFiles.length > 0 && !isSampleData && pdfPhase !== 'consent'
     && modalShownForRun !== generatedFiles;
   // The review ask follows the same real-run rule as the donate card (a run
-  // with files, never sample data, never on the consent gate). The modal does
-  // not hide it: once the modal has carried the donation ask, the review line
-  // is the one ask left on the page.
+  // with files, never sample data, never on the consent gate). The condensed
+  // line sits directly under the download actions, inside the first screen,
+  // on every run; the full card sits below the donate card until it has been
+  // seen once. The modal does not hide either: once it has carried the
+  // donation ask, the review line is the one ask left on the page.
   const showReview = generatedFiles.length > 0 && !isSampleData && pdfPhase !== 'consent';
-  const reviewAsk = showReview && <ReviewAsk condensed={reviewCondensed} runKey={generatedFiles} />;
+  const reviewLine = showReview && <ReviewAsk condensed runKey={generatedFiles} />;
+  const reviewCard = showReview && !fullCardSeen
+    && <ReviewAsk condensed={false} runKey={generatedFiles} onSeen={rememberSupportAskSeen} />;
   const showSourceFiles = hasTemplate && !isSampleData && pdfPhase !== 'consent';
   const sourceFiles = showSourceFiles && (
     <div className={s.sourceRow}>
@@ -241,6 +234,7 @@ export function DoneView({ isDemo }: DoneViewProps) {
           <PdfFlow files={generatedFiles} baseName={baseName}
             onDownloadWord={() => void handleWordDownload()} onAfterDownload={handlePdfAfterDownload}
             onDownloadFile={handleFileDownloadByStem} onAfterFileDownload={noteSingleDownload} />
+          {reviewLine}
           {sourceFiles}
           {/* The consent gate shows only its two decision buttons (Convert / Keep
               Word files); Start Over and the donate card are hidden there so the
@@ -252,9 +246,10 @@ export function DoneView({ isDemo }: DoneViewProps) {
               {t('done.startOver')}
             </button>
           )}
-          {/* Review ask sits below the donation card and follows its real-run
-              rule, so it is hidden on the consent gate and on sample runs. */}
-          {reviewAsk}
+          {/* The full review card sits below the donation card until seen once
+              and follows its real-run rule, so it is hidden on the consent
+              gate and on sample runs. */}
+          {reviewCard}
         </div>
         <DownloadCompleteModal open={downloadModalOpen} onClose={() => setDownloadModalOpen(false)}
           source={downloadModalSource} count={generatedFiles.length} runKey={generatedFiles} />
@@ -280,9 +275,10 @@ export function DoneView({ isDemo }: DoneViewProps) {
           {t('done.startOver')}
         </button>
       </div>
+      {reviewLine}
       {sourceFiles}
       {showAsk && <DonateInline count={generatedFiles.length} runKey={generatedFiles} surface="inline" />}
-      {reviewAsk}
+      {reviewCard}
       <DownloadCompleteModal open={downloadModalOpen} onClose={() => setDownloadModalOpen(false)}
         source={downloadModalSource} count={generatedFiles.length} runKey={generatedFiles} />
     </div>

@@ -5,10 +5,9 @@ import { trackEvent } from '@/services/analyticsService';
 import { DonateInline } from '../DonateInline';
 import { useStyles } from './DownloadCompleteModal.styles';
 
-// Same review destinations as ReviewAsk; opened in a new tab so the just-saved
+// Same review destination as ReviewAsk; opened in a new tab so the just-saved
 // download and this surface stay put.
 const TRUSTPILOT_REVIEW_URL = 'https://www.trustpilot.com/evaluate/veidne.com';
-const G2_REVIEW_URL = 'https://www.g2.com/products/veidne/review_modalities/new';
 
 interface DownloadCompleteModalProps {
   open: boolean;
@@ -39,9 +38,12 @@ export function DownloadCompleteModal({ open, onClose, source, count, runKey }: 
     return () => document.removeEventListener('keydown', handler);
   }, [open, onClose]);
 
-  // Fire once each time the modal opens.
+  // Fire once each time the modal opens. The review line below is on screen
+  // whenever the modal is, so its impression is counted here too.
   useEffect(() => {
-    if (open) trackEvent('download_modal_shown', { source });
+    if (!open) return;
+    trackEvent('download_modal_shown', { source });
+    trackEvent('review_ask_shown', { variant: 'modal' });
   }, [open, source]);
 
   if (!open) return null;
@@ -65,22 +67,12 @@ export function DownloadCompleteModal({ open, onClose, source, count, runKey }: 
           {t('review.ask.condensed')}{' '}
           <a
             className={s.reviewLink}
-            href={G2_REVIEW_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={() => trackEvent('review_g2_clicked', { source: 'download_modal' })}
-          >
-            {t('review.ask.cta')}
-          </a>
-          {' '}
-          <a
-            className={s.reviewLink}
             href={TRUSTPILOT_REVIEW_URL}
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => trackEvent('review_trustpilot_clicked', { source: 'download_modal' })}
           >
-            {t('review.ask.ctaTrustpilot')}
+            {t('review.ask.condensedCta')}
           </a>
         </div>
 
