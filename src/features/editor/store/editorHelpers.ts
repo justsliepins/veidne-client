@@ -64,6 +64,9 @@ interface PlaceholderMatch {
   claims: { token: WordToken; prefix: string; suffix: string }[];
 }
 
+/** {{#each}}, {{/each}}, {{^empty}}, {{> partial}}: control tags, never fields. */
+const CONTROL_TAG = /^[#/^>]/;
+
 function scanPlaceholderMatches(tokens: WordToken[]): PlaceholderMatch[] {
   const paragraphs = new Map<number, WordToken[]>();
   for (const token of tokens) {
@@ -90,6 +93,9 @@ function scanPlaceholderMatches(tokens: WordToken[]): PlaceholderMatch[] {
       const matchEnd = match.index + match[0].length;
       const name = match[1].trim();
       if (!name) continue;
+      // Handlebars control structures from another tool's template are not
+      // merge fields. Left alone they become literal text in the output.
+      if (CONTROL_TAG.test(name)) continue;
 
       const claims: PlaceholderMatch['claims'] = [];
       for (const { start, end, token } of positions) {
