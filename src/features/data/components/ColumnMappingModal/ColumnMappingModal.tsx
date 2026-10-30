@@ -11,10 +11,16 @@ interface ColumnMappingModalProps {
   rows: Record<string, string>[]; placeholderNames: string[];
   onApply: (mapping: Record<string, string>) => void; onCancel: () => void;
   onReupload: (file: File) => void;
+  /** Zero fields in the document: back to the Fields step, keeping the data. */
+  onAddFields: () => void;
 }
 
-export function ColumnMappingModal({ open, matchResult, rows, placeholderNames, onApply, onCancel, onReupload }: ColumnMappingModalProps) {
+export function ColumnMappingModal({ open, matchResult, rows, placeholderNames, onApply, onCancel, onReupload, onAddFields }: ColumnMappingModalProps) {
   const s = useStyles();
+  // Nothing to match to. Instead of a table of disabled controls under a
+  // sentence claiming the columns were matched, say so and send the user to
+  // add a field; the spreadsheet stays loaded for when they come back.
+  const noFields = placeholderNames.length === 0;
   const [mapping, setMapping] = useState<Record<string, string>>(() => {
     const init: Record<string, string> = {};
     for (const m of matchResult.matched) init[m.column] = m.placeholder;
@@ -59,15 +65,21 @@ export function ColumnMappingModal({ open, matchResult, rows, placeholderNames, 
       <DialogSurface className={s.surface}>
         <div className={s.modalHeader}>
           <div className={s.title}>{t('data.mapping.title')}</div>
-          <div className={s.subtitle}>{t('data.mapping.subtitle')}</div>
-          {!hasData && (
+          {!noFields && <div className={s.subtitle}>{t('data.mapping.subtitle')}</div>}
+          {noFields && (
+            <div className={s.noticeBanner}>
+              <div className={s.noticeBold}>{t('data.mapping.noFields.title')}</div>
+              <div className={s.noticeText}>{t('data.mapping.noFields.text')}</div>
+            </div>
+          )}
+          {!noFields && !hasData && (
             <div className={s.noticeBanner}>
               <div className={s.noticeBold}>{t('mapping.columnsMatchPerfectly')}</div>
               <div className={s.noticeText}>{t('mapping.noDataRows')}</div>
             </div>
           )}
         </div>
-        <div className={s.table}>
+        {!noFields && <div className={s.table}>
           <div className={s.tableHeader}>
             <span className={s.headerCol}>{t('data.mapping.column')}</span>
             <span className={s.headerPlaceholder}>{t('data.mapping.placeholder')}</span>
@@ -85,9 +97,14 @@ export function ColumnMappingModal({ open, matchResult, rows, placeholderNames, 
             </div>
             {renderRows(unmatchedCols, false)}
           </>)}
-        </div>
+        </div>}
         <div className={s.footer}>
-          {hasData ? (
+          {noFields ? (
+            <>
+              <VeidneButton appearance="secondary" size="small" onClick={onCancel}>{t('data.mapping.cancel')}</VeidneButton>
+              <VeidneButton appearance="primary" size="small" onClick={onAddFields}>{t('data.mapping.addFields')}</VeidneButton>
+            </>
+          ) : hasData ? (
             <>
               <VeidneButton appearance="secondary" size="small" onClick={onCancel}>{t('data.mapping.cancel')}</VeidneButton>
               <VeidneButton appearance="primary" size="small" onClick={handleApply}>{t('data.mapping.apply')}</VeidneButton>

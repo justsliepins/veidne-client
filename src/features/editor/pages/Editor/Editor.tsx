@@ -290,6 +290,19 @@ export function Editor() {
     useDataStore.getState().reset();
     useDemoStore.getState().reset();
   }, []);
+  // Forward from the Fields step. Data already loaded means back to the
+  // preview, never a second request for the same spreadsheet; but data that
+  // was never matched (the fields were added after the upload) goes through
+  // matching first, so the new fields get their columns.
+  const goForwardFromFields = useCallback(() => {
+    if (rows.length > 0) {
+      if (Object.keys(columnMapping).length === 0 && placeholders.length > 0) matchWithLoadedTemplate();
+      else setPhase('preview');
+      return;
+    }
+    setPhase('excelUpload');
+    if (flow === 'template-data') setDataSubState('upload');
+  }, [rows.length, columnMapping, placeholders.length, matchWithLoadedTemplate, setPhase, setDataSubState, flow]);
   const handleScrollTo = useCallback((id: string) => {
     document.querySelector(`[data-placeholder-id="${id}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }, []);
@@ -415,13 +428,7 @@ export function Editor() {
             <div className={s.documentColumn}>{coaching}{showFieldNudge && <FieldNudge text={nudgeText} onDismiss={retireFieldNudge} />}<DocumentArea /></div>
             <PlaceholderSidebar onScrollTo={handleScrollTo} collapsed={sidebarCollapsed}
               onToggleCollapse={() => setSidebarCollapsed(c => !c)} dataLoaded={rows.length > 0}
-              onUploadData={() => {
-                // Data already loaded: forward means back to the preview, never
-                // a second request for the same spreadsheet.
-                if (rows.length > 0) { setPhase('preview'); return; }
-                setPhase('excelUpload');
-                if (flow === 'template-data') setDataSubState('upload');
-              }} />
+              onUploadData={goForwardFromFields} />
           </div>}
           {editorPhase === 'excelUpload' && (dataSubState === 'matchData' ? (
             <MatchDataScreen columns={dataColumns} rowCount={rows.length}
@@ -458,12 +465,7 @@ export function Editor() {
           {isDone && <DoneView isDemo={flow === 'exploring'} />}
           {editorPhase === 'placeholders' && placeholders.length > 0 && (
             <div className={s.mobileForwardBar}>
-              <VeidneButton appearance="primary" style={{ width: '100%' }}
-                onClick={() => {
-                  if (rows.length > 0) { setPhase('preview'); return; }
-                  setPhase('excelUpload');
-                  if (flow === 'template-data') setDataSubState('upload');
-                }}>
+              <VeidneButton appearance="primary" style={{ width: '100%' }} onClick={goForwardFromFields}>
                 {t(rows.length > 0 ? 'placeholder.sidebar.backToPreview' : 'placeholder.sidebar.uploadData')}
               </VeidneButton>
             </div>
@@ -471,7 +473,8 @@ export function Editor() {
         </div>
         {matchResult && <ColumnMappingModal key={matchResult.matched.map(m => m.column).join()} open={editorPhase === 'mapping'} matchResult={matchResult}
           rows={rows} placeholderNames={placeholders.map(p => p.name)}
-          onApply={applyMapping} onCancel={cancelMapping} onReupload={handleExcelFile} />}
+          onApply={applyMapping} onCancel={cancelMapping} onReupload={handleExcelFile}
+          onAddFields={() => setPhase('placeholders')} />}
         <PicturesModal />
         <GenerateProgressModal open={isGenerating} onCancel={cancel} />
         <ErrorToast message={errorMsg ?? ''} visible={!!errorMsg} onDismiss={dismissError} sticky={errorSticky}
