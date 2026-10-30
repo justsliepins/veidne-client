@@ -43,6 +43,8 @@ import { downloadTaggedTemplate } from '@/features/generator/utils/sourceFiles';
 import { useTemplateStore } from '@/features/templates/store/templateStore';
 import { useBeforeUnload } from '@/shared/hooks/useBeforeUnload';
 import { saveSession, toBase64, clearSession, loadSession, fromBase64, type SavedSession } from '../../utils/sessionPersistence';
+import { TemplateSyntaxError } from '@/features/generator/utils/documentGenerator';
+import { templateSyntaxMessage } from '../../utils/templateSyntaxMessage';
 import { useStyles } from './Editor.styles';
 
 // Documents this browser has generated from its own files, across runs. Local
@@ -93,8 +95,15 @@ export function Editor() {
   // bug-report channel first, then the same review link every other surface
   // uses, so the invitation does not depend on the outcome.
   const [generateFailed, setGenerateFailed] = useState(false);
+  const [errorSticky, setErrorSticky] = useState(false);
   const [bugReportOpen, setBugReportOpen] = useState(false);
-  const dismissError = useCallback(() => { setErrorMsg(null); setGenerateFailed(false); }, []);
+  const dismissError = useCallback(() => { setErrorMsg(null); setGenerateFailed(false); setErrorSticky(false); }, []);
+  // A refused template stays on screen with the reason until dismissed; any
+  // other load failure is the short generic toast.
+  const showDocumentLoadError = useCallback((e: unknown) => {
+    if (e instanceof TemplateSyntaxError) { setErrorMsg(templateSyntaxMessage(e.info)); setErrorSticky(true); }
+    else setErrorMsg(t('error.file.corrupt'));
+  }, []);
   // Brief parsing indicator for the upload drop zones.
   const [parsing, setParsing] = useState(false);
   // First-run, one-time field nudge: shown once ever, never reappears after the
@@ -154,9 +163,9 @@ export function Editor() {
   const handleDocFile = useCallback(async (file: File) => {
     setParsing(true);
     try { await loadDocument(file); setPhase('placeholders'); trackEvent('document_uploaded'); }
-    catch { setErrorMsg(t('error.file.corrupt')); }
+    catch (e) { showDocumentLoadError(e); }
     finally { setParsing(false); }
-  }, [loadDocument, setPhase]);
+  }, [loadDocument, setPhase, showDocumentLoadError]);
   const handleExcelFile = useCallback(async (file: File) => {
     setParsing(true);
     try { await loadExcel(file); trackEvent('excel_uploaded'); }
@@ -198,8 +207,8 @@ export function Editor() {
       await loadDocument(file);
       matchWithLoadedTemplate();
       trackEvent('document_uploaded');
-    } catch { setErrorMsg(t('error.file.corrupt')); }
-  }, [loadDocument, matchWithLoadedTemplate]);
+    } catch (e) { showDocumentLoadError(e); }
+  }, [loadDocument, matchWithLoadedTemplate, showDocumentLoadError]);
   const handleMatchDataBack = useCallback(() => {
     useDataStore.getState().reset();
     setPhase('excelUpload');
@@ -446,7 +455,7 @@ export function Editor() {
           onApply={applyMapping} onCancel={cancelMapping} onReupload={handleExcelFile} />}
         <PicturesModal />
         <GenerateProgressModal open={isGenerating} onCancel={cancel} />
-        <ErrorToast message={errorMsg ?? ''} visible={!!errorMsg} onDismiss={dismissError}
+        <ErrorToast message={errorMsg ?? ''} visible={!!errorMsg} onDismiss={dismissError} sticky={errorSticky}
           actions={generateFailed && !!errorMsg && (
             <>
               <button type="button" className={s.errorActionBtn} onClick={() => setBugReportOpen(true)}>

@@ -28,6 +28,16 @@ export interface TemplateErrorInfo {
   tag: string;
 }
 
+/** Thrown at upload when the template will not compile; carries the details. */
+export class TemplateSyntaxError extends Error {
+  readonly info: TemplateErrorInfo;
+  constructor(info: TemplateErrorInfo) {
+    super('template_syntax');
+    this.name = 'TemplateSyntaxError';
+    this.info = info;
+  }
+}
+
 type ErrorProps = Record<string, unknown> & { errors?: { properties?: Record<string, unknown> }[] };
 
 /**

@@ -11,13 +11,16 @@ interface ErrorToastProps {
   /** Follow-up actions shown under the message. A toast with actions stays
    *  until dismissed, so the actions can actually be used. */
   actions?: ReactNode;
+  /** A message the user has to read and act on, such as a refused upload with
+   *  the reason: stays until dismissed, with a close button. */
+  sticky?: boolean;
 }
 const DISMISS_MS = 5000;
 
-export function ErrorToast({ message, visible, onDismiss, actions }: ErrorToastProps) {
+export function ErrorToast({ message, visible, onDismiss, actions, sticky = false }: ErrorToastProps) {
   const s = useStyles();
   const timerRef = useRef<ReturnType<typeof setTimeout>>();
-  const autoDismiss = !actions;
+  const autoDismiss = !actions && !sticky;
   const startTimer = useCallback(() => {
     if (autoDismiss) timerRef.current = setTimeout(onDismiss, DISMISS_MS);
   }, [onDismiss, autoDismiss]);
@@ -32,7 +35,7 @@ export function ErrorToast({ message, visible, onDismiss, actions }: ErrorToastP
       <div className={s.row}>
         <ErrorCircle16Regular className={s.icon} />
         <span className={s.message}>{message}</span>
-        {actions && (
+        {!autoDismiss && (
           <button type="button" className={s.closeBtn} onClick={onDismiss} aria-label={t('common.close')}>
             <Dismiss16Regular />
           </button>

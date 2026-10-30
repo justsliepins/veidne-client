@@ -6,6 +6,8 @@ import { setImageFieldTag, clearImageFieldTagsByName, imageFieldNameFromDescr } 
 import { useDataStore } from '@/features/data/store/dataStore';
 import type { WordToken, Placeholder, SelectionState, EditorSnapshot, PageLayout, ParagraphStyle } from '../utils/types';
 import { findAllOccurrences, getTokenRange, getSelectedText, snap, idle, detectTemplatePlaceholders } from './editorHelpers';
+import { createTaggedTemplate } from '@/features/generator/utils/documentTagger';
+import { checkTemplateCompiles, TemplateSyntaxError } from '@/features/generator/utils/documentGenerator';
 
 interface EditorState {
   rawDocxBytes: ArrayBuffer | null; fileName: string | null;
@@ -75,10 +77,18 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     const zip = new PizZip(buf);
     normalizeFieldsInDocx(zip);
     const normalizedBytes = zip.generate({ type: 'arraybuffer' }) as ArrayBuffer;
-    revokeImageUrls(get().wordTokens);
     const { tokens, pageLayout, paragraphStyles } = parseDocxDirect(normalizedBytes);
     const detected = detectTemplatePlaceholders(tokens);
     detected.push(...detectImageFields(tokens, detected.length));
+    // Compile once, exactly as generation will, so a template docxtemplater
+    // rejects (a mismatched {{#a}}...{{/b}} pair in a header, for instance)
+    // is refused here with the reason, not at Generate with a generic toast.
+    const problem = checkTemplateCompiles(createTaggedTemplate(normalizedBytes, detected, tokens), detected);
+    if (problem) {
+      revokeImageUrls(tokens);
+      throw new TemplateSyntaxError(problem);
+    }
+    revokeImageUrls(get().wordTokens);
     set({ rawDocxBytes: normalizedBytes, fileName: file.name, htmlContent: null, wordTokens: tokens,
       pageLayout, paragraphStyles,
       placeholders: detected, selectedPlaceholderId: null, hoveredTokenId: null,
