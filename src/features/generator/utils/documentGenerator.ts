@@ -16,6 +16,47 @@ export class DocumentGenerationError extends Error {
   }
 }
 
+/** The parts of a docxtemplater error worth showing or recording. */
+export interface TemplateErrorInfo {
+  /** Stable docxtemplater code, e.g. closing_tag_does_not_match_opening_tag. */
+  id: string;
+  /** The library's own sentence about what is wrong. */
+  explanation: string;
+  /** Zip part the error was found in, e.g. word/document.xml or word/header1.xml. */
+  file: string;
+  /** The offending tag text when the error names one, otherwise empty. */
+  tag: string;
+}
+
+type ErrorProps = Record<string, unknown> & { errors?: { properties?: Record<string, unknown> }[] };
+
+/**
+ * Read the first docxtemplater error out of a thrown value. docxtemplater
+ * throws a TemplateError whose `properties.errors` lists the individual
+ * problems (or a single error whose `properties` is the problem itself); a
+ * DocumentGenerationError wraps one as its cause. Anything else yields null.
+ */
+export function describeTemplateError(e: unknown): TemplateErrorInfo | null {
+  const root = e instanceof DocumentGenerationError ? e.cause : e;
+  const props = (root as { properties?: ErrorProps } | null)?.properties;
+  if (!props || typeof props !== 'object') return null;
+  const first = Array.isArray(props.errors) && props.errors.length > 0 ? props.errors[0].properties ?? {} : props;
+  const str = (v: unknown) => (typeof v === 'string' ? v : '');
+  return {
+    id: str(first.id) || 'unknown',
+    explanation: str(first.explanation),
+    file: str(first.file),
+    tag: str(first.xtag) || str(first.closingtag) || str(first.openingtag),
+  };
+}
+
+/** One line for the console, so a bug report has something to quote. */
+export function templateErrorSummary(e: unknown): string {
+  const info = describeTemplateError(e);
+  if (info) return `${info.id}${info.file ? ` in ${info.file}` : ''}${info.explanation ? `: ${info.explanation}` : ''}`;
+  return e instanceof Error ? `${e.name}: ${e.message}` : String(e);
+}
+
 // Private-use code points stand in for literal braces that belong to the
 // document content (embedded JSON, Python, etc.) while docxtemplater scans the
 // file. They never occur in real text, so they survive the render untouched
@@ -64,24 +105,9 @@ function restoreLiteralBraces(xml: string): string {
     .replace(new RegExp(SENT_CLOSE, 'g'), '}');
 }
 
-export function generateDocument(
-  taggedDocxBytes: ArrayBuffer,
-  rowData: Record<string, string>,
-  columnMapping: Record<string, string>,
-  placeholders: Placeholder[],
-  imageSwaps?: ImageFieldSwap[],
-): Blob {
-  const zip = new PizZip(taggedDocxBytes);
-
-  const docFile = zip.file('word/document.xml');
-  if (docFile) {
-    // Image field tags live in drawing alt text, never in w:t content, so
-    // only text field names take part in brace protection.
-    const names = placeholders.filter((p) => p.type !== 'image').map((p) => p.name);
-    zip.file('word/document.xml', neutralizeIncidentalBraces(docFile.asText(), names));
-  }
-
-  const doc = new Docxtemplater(zip, {
+/** docxtemplater over an already neutralized zip, with Veidne's settings. */
+function compileTemplate(zip: PizZip): Docxtemplater {
+  return new Docxtemplater(zip, {
     paragraphLoop: true,
     linebreaks: true,
     nullGetter: () => '',
@@ -89,10 +115,47 @@ export function generateDocument(
     // Defence in depth: should a stray delimiter ever slip past neutralization,
     // render it as literal text rather than throwing.
     syntax: { allowUnopenedTag: true, allowUnclosedTag: true },
-    // Keep raw TemplateError objects out of the console; we surface a friendly
-    // message via DocumentGenerationError instead.
+    // Keep raw TemplateError objects out of the console; the caller logs one
+    // summary line and surfaces a friendly message.
     errorLogging: false,
   });
+}
+
+function neutralizedZip(taggedDocxBytes: ArrayBuffer, placeholders: Placeholder[]): PizZip {
+  const zip = new PizZip(taggedDocxBytes);
+  const docFile = zip.file('word/document.xml');
+  if (docFile) {
+    // Image field tags live in drawing alt text, never in w:t content, so
+    // only text field names take part in brace protection.
+    const names = placeholders.filter((p) => p.type !== 'image').map((p) => p.name);
+    zip.file('word/document.xml', neutralizeIncidentalBraces(docFile.asText(), names));
+  }
+  return zip;
+}
+
+/**
+ * Compile a tagged template exactly as generateDocument would, without
+ * rendering. Returns the first problem docxtemplater reports, or null when
+ * the template compiles. Used at upload so a template the generator will
+ * reject is refused before the user invests in data mapping.
+ */
+export function checkTemplateCompiles(taggedDocxBytes: ArrayBuffer, placeholders: Placeholder[]): TemplateErrorInfo | null {
+  try {
+    compileTemplate(neutralizedZip(taggedDocxBytes, placeholders));
+    return null;
+  } catch (e) {
+    return describeTemplateError(e) ?? { id: 'unknown', explanation: e instanceof Error ? e.message : String(e), file: '', tag: '' };
+  }
+}
+
+export function generateDocument(
+  taggedDocxBytes: ArrayBuffer,
+  rowData: Record<string, string>,
+  columnMapping: Record<string, string>,
+  placeholders: Placeholder[],
+  imageSwaps?: ImageFieldSwap[],
+): Blob {
+  const zip = neutralizedZip(taggedDocxBytes, placeholders);
 
   const templateData: Record<string, string> = {};
   const imageFieldNames = new Set(placeholders.filter((p) => p.type === 'image').map((p) => p.name));
@@ -102,9 +165,15 @@ export function generateDocument(
     templateData[placeholder] = rowData[column] ?? '';
   }
 
+  // The constructor compiles every part of the template and is where a
+  // malformed tag pair throws, so it sits inside the try with render: the
+  // cause travels in the DocumentGenerationError either way.
+  let doc: Docxtemplater;
   try {
+    doc = compileTemplate(zip);
     doc.render(templateData);
   } catch (e) {
+    console.warn(`[documentGenerator] template rejected: ${templateErrorSummary(e)}`);
     throw new DocumentGenerationError(e);
   }
 

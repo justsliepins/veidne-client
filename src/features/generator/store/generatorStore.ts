@@ -34,6 +34,9 @@ export const useGeneratorStore = create<GeneratorState>((set, get) => ({
   ...initial,
 
   generate: async (rawDocxBytes, placeholders, rows, columnMapping, originalFileName) => {
+    // One run at a time. The progress overlay normally keeps a second click
+    // out, but the store must not depend on the UI for that.
+    if (get().isGenerating) return;
     const baseName = originalFileName.replace(/\.docx$/i, '') || 'documents';
     set({ isGenerating: true, progress: 0, currentRow: 0, totalRows: rows.length, generatedFiles: [], cancelled: false, baseName });
     useDataStore.getState().setPhase('generating');
