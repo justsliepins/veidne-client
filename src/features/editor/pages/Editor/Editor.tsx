@@ -43,7 +43,7 @@ import { downloadTaggedTemplate } from '@/features/generator/utils/sourceFiles';
 import { useTemplateStore } from '@/features/templates/store/templateStore';
 import { useBeforeUnload } from '@/shared/hooks/useBeforeUnload';
 import { saveSession, toBase64, clearSession, loadSession, fromBase64, type SavedSession } from '../../utils/sessionPersistence';
-import { TemplateSyntaxError } from '@/features/generator/utils/documentGenerator';
+import { TemplateSyntaxError, describeTemplateError } from '@/features/generator/utils/documentGenerator';
 import { templateSyntaxMessage } from '../../utils/templateSyntaxMessage';
 import { useStyles } from './Editor.styles';
 
@@ -96,6 +96,8 @@ export function Editor() {
   // uses, so the invitation does not depend on the outcome.
   const [generateFailed, setGenerateFailed] = useState(false);
   const [errorSticky, setErrorSticky] = useState(false);
+  // The template whose failure already showed the review ask.
+  const errorAskShownFor = useRef<ArrayBuffer | null>(null);
   const [bugReportOpen, setBugReportOpen] = useState(false);
   const dismissError = useCallback(() => { setErrorMsg(null); setGenerateFailed(false); setErrorSticky(false); }, []);
   // A refused template stays on screen with the reason until dismissed; any
@@ -291,20 +293,33 @@ export function Editor() {
   const handleScrollTo = useCallback((id: string) => {
     document.querySelector(`[data-placeholder-id="${id}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }, []);
+  // Every generate_started that does not end in generate_completed records
+  // why, so a blocked user shows up as a reason and not as an unmatched row.
   const handleGenerate = useCallback(async () => {
     trackEvent('generate_started', useDataStore.getState().isSampleData ? { sample: true } : undefined);
-    if (!rawDocxBytes) return;
+    if (!rawDocxBytes) { trackEvent('generate_failed', { path: 'no_document' }); return; }
     try { await generate(rawDocxBytes, placeholders, rows, columnMapping, fileName ?? 'document.docx'); }
-    catch {
+    catch (e) {
+      const info = describeTemplateError(e);
+      trackEvent('generate_failed', {
+        path: 'error',
+        error: info?.id ?? (e instanceof Error ? e.name : 'unknown'),
+        ...(info?.file ? { part: info.file } : {}),
+      });
       setErrorMsg(t('error.generate'));
       setGenerateFailed(true);
-      trackEvent('review_ask_shown', { variant: 'error' });
+      // One impression per template, however many times Generate is pressed.
+      if (errorAskShownFor.current !== rawDocxBytes) {
+        errorAskShownFor.current = rawDocxBytes;
+        trackEvent('review_ask_shown', { variant: 'error' });
+      }
       return;
     }
     // generate() resolves normally on cancel too (the loop just stops and the
     // phase goes back to 'preview'), so a cancelled run must not count as
     // completed. Only a run that actually reached 'done' is reported.
-    if (useGeneratorStore.getState().cancelled || useDataStore.getState().editorPhase !== 'done') return;
+    if (useGeneratorStore.getState().cancelled) { trackEvent('generate_failed', { path: 'cancelled' }); return; }
+    if (useDataStore.getState().editorPhase !== 'done') { trackEvent('generate_failed', { path: 'not_done' }); return; }
     const count = useGeneratorStore.getState().generatedFiles.length;
     // images: total pictures matched for the run, present only when the
     // template carries image fields (so flag-off payloads are unchanged).
@@ -342,13 +357,17 @@ export function Editor() {
   // template link to the left of Generate, then the button. Generate stays one
   // click with nothing in front of it. The link is hidden for sample data,
   // whose template is not the user's.
+  // While the failure toast is up the button is disabled: a failed run has
+  // already ended by the time the click handler resumes, so the store's
+  // in-flight guard cannot catch a retry, and the same template and data
+  // would fail the same way. Dismissing the toast re-enables it.
   const generateBtn = <div className={s.generateRow}>
     {!isSampleData && rawDocxBytes && placeholders.length > 0 && (
       <button type="button" className={s.saveTemplateLink} onClick={() => downloadTaggedTemplate('generate')}>
         {t('generate.saveTemplate')}
       </button>
     )}
-    <button type="button" className={s.btnGenerate} onClick={handleGenerate}>
+    <button type="button" className={s.btnGenerate} onClick={handleGenerate} disabled={generateFailed}>
       {t('generate.button')} <span className={s.countBadge}>{t('generate.count', { count: String(rows.length) })}</span>
     </button>
   </div>;

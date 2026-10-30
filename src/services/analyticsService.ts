@@ -8,6 +8,7 @@ export type AnalyticsEvent =
   | 'excel_uploaded'
   | 'generate_started'
   | 'generate_completed'
+  | 'generate_failed'
   | 'template_downloaded'
   | 'template_selected'
   | 'kit_downloaded'

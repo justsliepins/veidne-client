@@ -74,6 +74,7 @@ export const useStyles = makeStyles({
     transitionProperty: 'background-color',
     transitionDuration: '0.2s',
     ':hover': { backgroundColor: '#46529E' },
+    ':disabled': { backgroundColor: '#9AA4DB', cursor: 'not-allowed', boxShadow: 'none' },
     ':focus-visible': { outlineWidth: '2px', outlineStyle: 'solid', outlineColor: '#5566C4', outlineOffset: '2px' },
     '@media (prefers-reduced-motion: reduce)': { transitionProperty: 'none' },
     [media.below.md]: {
