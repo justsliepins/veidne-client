@@ -468,4 +468,66 @@ export const jsonLdByPath = {
       },
     ],
   },
+  // A notice page: who runs the site and what the page is, without the
+  // SoftwareApplication node and its privacy claim (review c, finding 20).
+  '/privacy': {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'Organization',
+        '@id': 'https://veidne.com/#org',
+        name: 'Veidne',
+        url: 'https://veidne.com/',
+      },
+      {
+        '@type': 'WebSite',
+        '@id': 'https://veidne.com/#website',
+        url: 'https://veidne.com/',
+        name: 'Veidne',
+        inLanguage: 'en',
+        publisher: { '@id': 'https://veidne.com/#org' },
+      },
+      {
+        '@type': 'WebPage',
+        '@id': 'https://veidne.com/privacy',
+        url: 'https://veidne.com/privacy',
+        name: "Privacy Notice | Veidne",
+        description:
+          "How Veidne handles your data. Your Word document and Excel list stay in your browser. PDF conversion, usage statistics and messages you send are explained here.",
+        inLanguage: 'en',
+        isPartOf: { '@id': 'https://veidne.com/#website' },
+      },
+    ],
+  },
+  // A notice page: who runs the site and what the page is, without the
+  // SoftwareApplication node and its privacy claim (review c, finding 20).
+  '/accessibility': {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'Organization',
+        '@id': 'https://veidne.com/#org',
+        name: 'Veidne',
+        url: 'https://veidne.com/',
+      },
+      {
+        '@type': 'WebSite',
+        '@id': 'https://veidne.com/#website',
+        url: 'https://veidne.com/',
+        name: 'Veidne',
+        inLanguage: 'en',
+        publisher: { '@id': 'https://veidne.com/#org' },
+      },
+      {
+        '@type': 'WebPage',
+        '@id': 'https://veidne.com/accessibility',
+        url: 'https://veidne.com/accessibility',
+        name: "Accessibility | Veidne",
+        description:
+          "Veidne aims to meet WCAG 2.2 level AA. See the known problems we are still fixing and how to tell us when something is hard to use.",
+        inLanguage: 'en',
+        isPartOf: { '@id': 'https://veidne.com/#website' },
+      },
+    ],
+  },
 };

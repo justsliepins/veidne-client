@@ -76,6 +76,10 @@ export const useStyles = makeStyles({
     fontSize: '13px', lineHeight: '1.55', color: '#767077',
     maxWidth: '460px', marginLeft: 'auto', marginRight: 'auto', marginTop: '4px',
   },
+  microLink: {
+    color: '#46529E', textDecorationLine: 'underline', textUnderlineOffset: '2px',
+    ':focus-visible': { outline: '2px solid #5566C4', outlineOffset: '2px' },
+  },
 
   // --- actions -------------------------------------------------------------
   row: {

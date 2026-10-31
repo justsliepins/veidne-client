@@ -11,6 +11,8 @@ import { GenerateWordDocumentsFromExcel } from '@/features/marketing/pages/Gener
 import { BulkDocumentGeneration } from '@/features/marketing/pages/BulkDocumentGeneration';
 import { MailMergeWithoutWord } from '@/features/marketing/pages/MailMergeWithoutWord';
 import { About } from '@/features/marketing/pages/About';
+import { Privacy } from '@/features/marketing/pages/Privacy';
+import { Accessibility } from '@/features/marketing/pages/Accessibility';
 
 /**
  * Browserless static prerender for the homepage and the use-case
@@ -83,6 +85,22 @@ export const prerenderRoutes: PrerenderRoute[] = [
     description:
       'Learn about Veidne, the free document template engine that automates mail merge and document generation from Word templates and Excel data.',
     Component: About,
+  },
+  {
+    // Same strings as meta.privacy.* in en.json, which PageSeo sets client-side.
+    path: '/privacy',
+    title: 'Privacy Notice | Veidne',
+    description:
+      'How Veidne handles your data. Your documents and spreadsheets stay in your browser. PDF conversion, usage statistics and messages you send are explained here.',
+    Component: Privacy,
+  },
+  {
+    // Same strings as meta.accessibility.* in en.json.
+    path: '/accessibility',
+    title: 'Accessibility | Veidne',
+    description:
+      'Veidne aims to meet WCAG 2.2 level AA. See the known problems we are still fixing and how to tell us when something is hard to use.',
+    Component: Accessibility,
   },
 ];
 

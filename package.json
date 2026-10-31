@@ -8,6 +8,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build && npm run prerender",
     "prerender": "vite build --ssr src/prerender/render.tsx --outDir dist-ssr && node scripts/prerender.mjs",
+    "check:legal": "node scripts/check-legal-placeholders.mjs",
     "lint": "eslint .",
     "preview": "vite preview",
     "test:e2e": "playwright test",

@@ -7,7 +7,7 @@ import { test, expect } from '@playwright/test';
 const BASE = 'http://localhost:5181';
 const EDITOR_LIBS = /\/(xlsx|docxtemplater|pizzip|jszip)[.\-_/]/;
 
-for (const path of ['/', '/about', '/free-online-mail-merge']) {
+for (const path of ['/', '/about', '/privacy', '/free-online-mail-merge']) {
   test(`${path} loads no spreadsheet or Word library`, async ({ page }) => {
     const urls: string[] = [];
     page.on('request', (r) => urls.push(r.url()));

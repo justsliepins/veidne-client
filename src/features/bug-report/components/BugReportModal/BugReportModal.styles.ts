@@ -39,6 +39,10 @@ export const useStyles = makeStyles({
   // A message about one field, directly under it (FORM-19).
   fieldError: { fontSize: '13px', lineHeight: '20px', fontWeight: 500, color: '#B91C1C', marginTop: '4px' },
   hint: { fontSize: '13px', lineHeight: '20px', fontWeight: 400, color: '#5E5560', marginTop: '4px' },
+  privacyLink: {
+    color: '#46529E', textDecorationLine: 'underline', textUnderlineOffset: '2px',
+    ':focus-visible': { outline: '2px solid #5566C4', outlineOffset: '2px' },
+  },
   input: {
     width: '100%', height: '48px', borderRadius: '6px', boxSizing: 'border-box',
     ...shorthands.borderStyle('solid'), ...shorthands.borderWidth('1px'), ...shorthands.borderColor('#8A8494'),

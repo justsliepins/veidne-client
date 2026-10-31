@@ -8,6 +8,8 @@ const Roadmap = lazy(() => import('@/features/marketing/pages/Roadmap').then((m)
 const Editor = lazy(() => import('@/features/editor/pages/Editor').then((m) => ({ default: m.Editor })));
 const NotFound = lazy(() => import('@/features/marketing/pages/NotFound').then((m) => ({ default: m.NotFound })));
 const ThankYou = lazy(() => import('@/features/donation/pages/ThankYou').then((m) => ({ default: m.ThankYou })));
+const Privacy = lazy(() => import('@/features/marketing/pages/Privacy').then((m) => ({ default: m.Privacy })));
+const Accessibility = lazy(() => import('@/features/marketing/pages/Accessibility').then((m) => ({ default: m.Accessibility })));
 
 // GEO step 1: answer-first use-case guide pages, prerendered to static HTML at build time.
 const FreeOnlineMailMerge = lazy(() => import('@/features/marketing/pages/FreeOnlineMailMerge').then((m) => ({ default: m.FreeOnlineMailMerge })));
@@ -45,6 +47,9 @@ export const router = createBrowserRouter([
   { path: '/generate-word-documents-from-excel', element: <LazyRoute Component={GenerateWordDocumentsFromExcel} /> },
   { path: '/bulk-document-generation', element: <LazyRoute Component={BulkDocumentGeneration} /> },
   { path: '/mail-merge-without-word', element: <LazyRoute Component={MailMergeWithoutWord} /> },
+  // Trust pages, prerendered like the guides (src/prerender/render.tsx) and in the sitemap.
+  { path: '/privacy', element: <LazyRoute Component={Privacy} /> },
+  { path: '/accessibility', element: <LazyRoute Component={Accessibility} /> },
   ...(DevPdfDone
     ? [{ path: '/dev/pdf-done', element: <LazyRoute Component={DevPdfDone} /> }]
     : []),

@@ -3,13 +3,17 @@ import { useTranslation } from '@/i18n/useTranslation';
 import { trackEvent } from '@/services/analyticsService';
 import { TRUSTPILOT_REVIEW_URL } from '@/config/constants';
 import { useTemplateStore } from '@/features/templates/store/templateStore';
+import { operatorParams } from '@/shared/utils/operator';
 import { useFooterStyles } from './Footer.styles';
 
 /**
  * Footer: four labelled groups (Product, Guides, Trust, About), the funding
- * line with a link to the donation box on /about, and the copyright line.
+ * line with a link to the donation box on /about, and the copyright and
+ * operator line. Every internal target is a prerendered page or /editor.
  */
 export function Footer() {
+  const operator = operatorParams();
+  const operatorReady = !Object.values(operator).some((v) => v.includes('[TO FILL:'));
   const styles = useFooterStyles();
   const { t } = useTranslation();
 
@@ -33,9 +37,10 @@ export function Footer() {
         </nav>
         <nav className={styles.col} aria-label={t('footer.group.trust')}>
           <span className={styles.guidesHeading}>{t('footer.group.trust')}</span>
-          {/* Privacy notice, Cookies and statistics, and Accessibility join this
-              group together with their prerendered pages (work package 9). */}
+          <Link to="/privacy" className={styles.link}>{t('footer.privacy')}</Link>
+          <Link to="/privacy#cookies" className={styles.link}>{t('footer.cookies')}</Link>
           <a href="https://github.com/justsliepins/veidne-client" className={styles.link} target="_blank" rel="noopener noreferrer">{t('footer.source')}</a>
+          <Link to="/accessibility" className={styles.link}>{t('footer.accessibility')}</Link>
         </nav>
         <nav className={styles.col} aria-label={t('footer.group.about')}>
           <span className={styles.guidesHeading}>{t('footer.group.about')}</span>
@@ -52,6 +57,10 @@ export function Footer() {
       </p>
       <p className={styles.funding}>
         <span className={styles.copyright}>{t('footer.copyright')}</span>
+        {/* Only with the owner's real details: a placeholder is never shown as
+            a fact on a public page (review c, finding 1). npm run check:legal
+            still fails while /privacy or /accessibility has one. */}
+        {operatorReady && <>{' '}{t('footer.operator', operator)}</>}
       </p>
     </footer>
   );

@@ -108,6 +108,8 @@ export function Landing() {
         </div>
         <p className={styles.dataNote}>
           {t('landing.data.note')}{' '}
+          <Link to="/privacy" className={styles.inlineLink}>{t('landing.data.privacyLink')}</Link>
+          {' · '}
           <a href="https://github.com/justsliepins/veidne-client" className={styles.inlineLink} target="_blank" rel="noopener noreferrer">{t('footer.source')}</a>
         </p>
       </section>

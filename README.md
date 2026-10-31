@@ -53,7 +53,7 @@ npm ci
 npm run dev
 ```
 
-`npm run build` runs the TypeScript check, the Vite build and a prerender step that builds a server bundle into `dist-ssr` and uses it to write static HTML for the homepage, the four use-case pages and the about page into `dist`. The result is a set of static files that any web server can serve; production uses nginx with a single-page-application fallback to `index.html`. `npm run preview` serves `dist` locally, though it does not map the prerendered routes the way nginx does. The `Dockerfile` builds the client and places `dist` in an nginx image; the nginx configuration that provides the `/api` proxy and the fallback is added outside this repository, so the image serves nothing on its own.
+`npm run build` runs the TypeScript check, the Vite build and a prerender step that builds a server bundle into `dist-ssr` and uses it to write static HTML for the homepage, the four use-case pages, the about page, the privacy notice and the accessibility page into `dist`. The result is a set of static files that any web server can serve; production uses nginx with a single-page-application fallback to `index.html`. `npm run preview` serves `dist` locally, though it does not map the prerendered routes the way nginx does. The `Dockerfile` builds the client and places `dist` in an nginx image; the nginx configuration that provides the `/api` proxy and the fallback is added outside this repository, so the image serves nothing on its own.
 
 ```
 npm run build

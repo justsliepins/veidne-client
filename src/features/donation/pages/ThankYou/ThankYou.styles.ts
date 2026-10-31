@@ -58,6 +58,10 @@ export const useThankYouStyles = makeStyles({
   },
   success: { fontSize: '15px', lineHeight: '24px', fontWeight: 400, color: '#15803D' },
   error: { fontSize: '13px', lineHeight: '20px', fontWeight: 400, color: '#EF4444' },
+  privacyLink: {
+    color: '#46529E', textDecorationLine: 'underline', textUnderlineOffset: '2px',
+    ':focus-visible': { outline: '2px solid #5566C4', outlineOffset: '2px' },
+  },
   onward: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' },
   otherTab: { ...veidneTypography.bodyRegular, color: tokens.colorNeutralForeground2, textAlign: 'center' },
   another: {

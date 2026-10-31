@@ -171,8 +171,12 @@ export function BugReportModal({ open, onClose }: BugReportModalProps) {
                 style={{ display: 'none' }} onChange={handleFileChange} />
             </div>
 
-            {/* What leaves the device, said where it leaves (journey audit 4a, Obligāti 4). */}
-            <p className={s.hint}>{t('bugReport.modal.privacy')}</p>
+            {/* What leaves the device, said where it leaves (journey audit 4a, Obligāti 4).
+                The link opens a new tab, so the typed report is not lost (WP12). */}
+            <p className={s.hint}>
+              {t('bugReport.modal.privacy')}{' '}
+              <a className={s.privacyLink} href="/privacy#messages" target="_blank" rel="noopener">{t('bugReport.modal.privacyLink')}</a>
+            </p>
 
             <button type="button" className={s.cta} disabled={!canSubmit} onClick={handleSubmit}>
               {loading ? t('bugReport.modal.sending') : t('bugReport.modal.submit')}

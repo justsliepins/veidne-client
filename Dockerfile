@@ -14,7 +14,9 @@ ENV VITE_CONVERT_API_URL=$VITE_CONVERT_API_URL
 ENV VITE_IMAGE_FIELDS=$VITE_IMAGE_FIELDS
 
 COPY . .
-RUN npm run build
+# The release gate for legal placeholders (work package 12): the image build
+# fails while any prerendered page still shows [TO FILL: ...].
+RUN npm run build && npm run check:legal
 
 FROM nginx:alpine
 RUN rm /etc/nginx/conf.d/default.conf

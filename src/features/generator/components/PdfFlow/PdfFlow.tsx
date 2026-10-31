@@ -263,7 +263,11 @@ export function PdfFlow({ files, baseName, onDownloadWord, onAfterDownload, onDo
             {t('pdf.consent.keepWord')}
           </button>
         </div>
-        <p className={s.micro}>{t('pdf.consent.rememberNote')}</p>
+        <p className={s.micro}>
+          {t('pdf.consent.rememberNote')}{' '}
+          {/* New tab: the generated files on this screen must not be lost. */}
+          <a className={s.microLink} href="/privacy#pdf" target="_blank" rel="noopener">{t('pdf.consent.privacyLink')}</a>
+        </p>
       </div>
     );
   }

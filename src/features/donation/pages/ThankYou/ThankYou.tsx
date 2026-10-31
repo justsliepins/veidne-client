@@ -114,7 +114,10 @@ export function ThankYou() {
                     onChange={(e) => { setSuggestion(e.target.value); setError(''); }} />
                 </div>
                 {/* What is sent, said where it is sent (journey audit 4a, Obligāti 4). */}
-                <p className={s.privacyNote}>{t('thankyou.suggestPrivacy')}</p>
+                <p className={s.privacyNote}>
+                  {t('thankyou.suggestPrivacy')}{' '}
+                  <a className={s.privacyLink} href="/privacy#messages" target="_blank" rel="noopener">{t('thankyou.suggestPrivacyLink')}</a>
+                </p>
                 <button type="button" className={s.cta} disabled={submitting || suggestion.trim().length === 0}
                   onClick={() => void handleSubmit()}>
                   {t('suggestion.modal.submit')}
