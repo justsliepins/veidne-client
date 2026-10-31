@@ -10,7 +10,10 @@
     "prerender": "vite build --ssr src/prerender/render.tsx --outDir dist-ssr && node scripts/prerender.mjs",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "seo:snapshot": "node scripts/seo/snapshot.mjs",
+    "seo:check": "node scripts/seo/check.mjs",
+    "seo:live": "node scripts/seo/live-check.mjs"
   },
   "dependencies": {
     "@fluentui/react-components": "^9.73.0",

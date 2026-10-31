@@ -1,0 +1,75 @@
+{
+  "keyPhrases": {
+    "/": [
+      "Free online mail merge in your browser",
+      "mail merge",
+      "Word template",
+      "Excel spreadsheet",
+      "one personalized document per row",
+      "in your browser",
+      "No install, no account, no code"
+    ],
+    "/free-online-mail-merge": [
+      "Free online mail merge",
+      "runs entirely in your browser",
+      "Word template",
+      "Excel spreadsheet",
+      "one personalized Word document for every row",
+      "no install, no account"
+    ],
+    "/generate-word-documents-from-excel": [
+      "Generate Word documents from Excel",
+      "one personalized document for each row",
+      "directly in your browser",
+      "Word template",
+      "no install and no account"
+    ],
+    "/bulk-document-generation": [
+      "Bulk document generation from a spreadsheet",
+      "bulk document generation",
+      "Word template",
+      "one personalized document for every row",
+      "no code and no install",
+      "runs in your browser"
+    ],
+    "/mail-merge-without-word": [
+      "Mail merge without Word or Microsoft Office",
+      "without Microsoft Word or Office",
+      "any modern browser",
+      "Word template",
+      "Excel spreadsheet",
+      "one personalized document per row"
+    ],
+    "/about": [
+      "About Veidne",
+      "mail merge",
+      "Word",
+      "Excel"
+    ]
+  },
+  "leadFacts": {
+    "/": [
+      { "fact": "free", "pattern": "\\bfree\\b" },
+      { "fact": "runs in the browser", "pattern": "in (your|the) browser" },
+      { "fact": "Word template and Excel", "pattern": "Word template[\\s\\S]*Excel" },
+      { "fact": "one document per row", "pattern": "one personalized document per row" },
+      { "fact": "no install, no account, no code", "pattern": "no install, no account, no code" },
+      { "fact": "privacy statement", "pattern": "never (leave|leaves|uploaded)|are not uploaded|stays? on (your|this) device" }
+    ]
+  },
+  "spaLinkTargets": ["/editor"],
+  "forbiddenAssets": [],
+  "noindexSources": [
+    { "route": "/editor", "file": "src/features/editor/pages/Editor/Editor.tsx", "pattern": "<PageSeo[^>]*noindex" },
+    { "route": "/thank-you", "file": "src/features/donation/pages/ThankYou/ThankYou.tsx", "pattern": "<PageSeo[^>]*noindex" },
+    { "route": "(404)", "file": "src/features/marketing/pages/NotFound/NotFound.tsx", "pattern": "<PageSeo[^>]*noindex" }
+  ],
+  "budget": {
+    "/": { "jsGzipTolerancePct": 1, "cssGzipAllowanceBytes": 1024 },
+    "/free-online-mail-merge": { "jsGzipTolerancePct": 1, "cssGzipAllowanceBytes": 1024 },
+    "/generate-word-documents-from-excel": { "jsGzipTolerancePct": 1, "cssGzipAllowanceBytes": 1024 },
+    "/bulk-document-generation": { "jsGzipTolerancePct": 1, "cssGzipAllowanceBytes": 1024 },
+    "/mail-merge-without-word": { "jsGzipTolerancePct": 1, "cssGzipAllowanceBytes": 1024 },
+    "/about": { "jsGzipTolerancePct": 1, "cssGzipAllowanceBytes": 1024 }
+  }
+}
