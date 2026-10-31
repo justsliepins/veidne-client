@@ -37,7 +37,7 @@ export function HeroCta({ showCount = false }: HeroCtaProps) {
   return (
     <>
       <div className={styles.ctaRow}>
-        <Link to="/editor?flow=template-data" className={styles.primaryCta}>
+        <Link to="/editor" className={styles.primaryCta}>
           {t('landing.hero.ctaPrimary')}
         </Link>
         <Link to="/editor?flow=exploring" className={styles.secondaryCta}>

@@ -134,11 +134,14 @@ test('flag on: object URLs are revoked across repeated uploads', async ({ page }
   await page.locator('input[type="file"]').setInputFiles(TEMPLATE_A);
   await expect(page.getByTestId('doc-image')).toHaveCount(1);
 
-  // SPA round trip (logo, then the hero CTA) so the counters survive; the
-  // editor's unsaved-work confirm is accepted.
+  // SPA round trip so the counters survive: the logo, the finished example,
+  // then "Use my files" and a second upload; the editor's unsaved-work confirm
+  // is accepted. (The hero's main button now keeps the work in progress,
+  // homepage audit finding 21, so it no longer starts a fresh upload.)
   page.on('dialog', (dialog) => void dialog.accept());
   await page.locator('a[href="/"]').first().click();
-  await page.getByRole('link', { name: 'Start with your document' }).click();
+  await page.locator('a[href*="flow=instant"], [aria-label="Open a finished example"]').first().click();
+  await page.getByRole('button', { name: 'Use my files' }).click();
   await page.locator('input[type="file"]').setInputFiles(TEMPLATE_A);
   await expect(page.getByTestId('doc-image')).toHaveCount(1);
 

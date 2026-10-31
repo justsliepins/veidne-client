@@ -76,7 +76,7 @@ export function Landing() {
       <section className={styles.ctaSection}>
         <h2 className={styles.sectionTitle}>{t('landing.cta.heading')}</h2>
         <p className={styles.ctaSubtitle}>{t('landing.cta.subtitle')}</p>
-        <Link to="/editor?flow=template-data" className={styles.ctaLink}>
+        <Link to="/editor" className={styles.ctaLink}>
           <VeidneButton appearance="primary">
             {t('landing.cta.button')}
           </VeidneButton>
