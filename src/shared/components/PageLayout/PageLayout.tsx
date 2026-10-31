@@ -5,8 +5,6 @@ import { NavBar } from '@/shared/components/NavBar';
 import { Footer } from '@/shared/components/Footer';
 import { TemplateLibrary } from '@/features/templates/components/TemplateLibrary';
 import { useTemplateStore } from '@/features/templates/store/templateStore';
-import { useEditorStore } from '@/features/editor/store/editorStore';
-import { useDataStore } from '@/features/data/store/dataStore';
 import { downloadTemplate } from '@/services/templateService';
 import { trackEvent } from '@/services/analyticsService';
 import { clearSession } from '@/features/editor/utils/sessionPersistence';
@@ -37,13 +35,26 @@ export function PageLayout({
   useMobileKeyboard();
 
   const handleTemplateSelect = useCallback(async (slug: string) => {
-    const buf = await downloadTemplate(slug);
+    // The editor and data stores (and with them the xlsx and docx libraries)
+    // load only when a template is chosen, not with every public page. The
+    // editor page loads in the same step, so it is ready to mount (and run its
+    // entry reset) before the template is put into the stores below.
+    const [buf, { useEditorStore }, { useDataStore }] = await Promise.all([
+      downloadTemplate(slug),
+      import('@/features/editor/store/editorStore'),
+      import('@/features/data/store/dataStore'),
+      import('@/features/editor/pages/Editor'),
+    ]);
     const file = new File([buf], `${slug}.docx`, { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
     useTemplateStore.getState().closeLibrary();
     clearSession();
     useEditorStore.getState().reset();
     useDataStore.getState().reset();
-    navigate('/editor?flow=template-data');
+    // From a public page: the editor opens on its entry path. Inside the editor
+    // (its upload step offers the library), the page is mounted and its address
+    // is plain /editor already, so it stays as it is: a later reload then
+    // resumes the saved project instead of clearing it (review b, finding 4).
+    if (window.location.pathname !== '/editor') navigate('/editor?flow=template-data');
     setTimeout(async () => {
       await useEditorStore.getState().loadDocument(file);
       const ds = useDataStore.getState();

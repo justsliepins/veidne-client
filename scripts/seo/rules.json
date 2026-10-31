@@ -58,7 +58,7 @@
     ]
   },
   "spaLinkTargets": ["/editor"],
-  "forbiddenAssets": [],
+  "forbiddenAssets": ["vendor-xlsx-", "vendor-docx-"],
   "noindexSources": [
     { "route": "/editor", "file": "src/features/editor/pages/Editor/Editor.tsx", "pattern": "<PageSeo[^>]*noindex" },
     { "route": "/thank-you", "file": "src/features/donation/pages/ThankYou/ThankYou.tsx", "pattern": "<PageSeo[^>]*noindex" },
