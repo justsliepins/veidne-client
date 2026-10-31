@@ -35,6 +35,8 @@ import { BridgeScreen } from '@/features/data/components/BridgeScreen';
 import { KitFlow } from '@/features/data/components/KitFlow';
 import { MatchDataScreen } from '@/features/data/components/MatchDataScreen';
 import { DataLoadedInfoBar } from '@/features/data/components/DataLoadedInfoBar';
+import { RegionalFormatBar } from '@/features/data/components/RegionalFormatBar';
+import type { RegionalColumns } from '@/features/data/utils/excelParser';
 import { TemplateUploadGuidance } from '../../components/TemplateUploadGuidance';
 import { GenerateProgressModal } from '@/features/generator/components/GenerateProgress';
 import { DoneView } from '@/features/generator/pages/Done';
@@ -46,6 +48,9 @@ import { saveSession, toBase64, clearSession, loadSession, fromBase64, type Save
 import { TemplateSyntaxError, describeTemplateError } from '@/features/generator/utils/documentGenerator';
 import { templateSyntaxMessage } from '../../utils/templateSyntaxMessage';
 import { useStyles } from './Editor.styles';
+
+// Sample rows are text, so nothing in them follows regional settings.
+const NO_REGIONAL: RegionalColumns = { dates: [], numbers: [] };
 
 // Documents this browser has generated from its own files, across runs. Local
 // only: read by nothing yet, never sent. localStorage can throw in private
@@ -69,6 +74,10 @@ export function Editor() {
   );
   const dataColumns = useDataStore((s) => s.columns);
   const isSampleData = useDataStore((s) => s.isSampleData);
+  const { formatConventions, regionalColumns, setFormatConventions } = useDataStore(
+    useShallow((s) => ({ formatConventions: s.formatConventions, regionalColumns: s.regionalColumns, setFormatConventions: s.setFormatConventions })),
+  );
+  const regional = isSampleData ? NO_REGIONAL : regionalColumns;
   const hasUnsavedWork = editorPhase !== 'upload' && editorPhase !== 'done';
   useBeforeUnload(hasUnsavedWork);
   const blocker = useBlocker(hasUnsavedWork);
@@ -463,6 +472,12 @@ export function Editor() {
               <DataLoadedInfoBar beat={dataTransitionBeat} rowCount={rows.length}
                 fieldCount={filledFieldCount} onDismiss={dismissInfoBar}
                 emptyFields={isSampleData ? [] : emptyFieldNames} onChooseColumns={matchResult ? () => setPhase('mapping') : undefined} />
+              {/* Shown once the load transition is over, like the warning bar. */}
+              {rows.length > 0 && (regional.dates.length > 0 || regional.numbers.length > 0) && (dataTransitionBeat === 0 || dataTransitionBeat >= 4) && (
+                <div className={s.formatsBar}>
+                  <RegionalFormatBar regional={regional} value={formatConventions} onChange={setFormatConventions} />
+                </div>
+              )}
               <DocumentArea previewMode getFilledValue={getFilledValue} transitionBeat={dataTransitionBeat} />
             </div>
             <PreviewPanel onBackToPlaceholders={() => setPhase('placeholders')}
@@ -480,7 +495,8 @@ export function Editor() {
         {matchResult && <ColumnMappingModal key={matchResult.matched.map(m => m.column).join()} open={editorPhase === 'mapping'} matchResult={matchResult}
           rows={rows} placeholderNames={placeholders.map(p => p.name)}
           onApply={applyMapping} onCancel={cancelMapping} onReupload={handleExcelFile}
-          onAddFields={() => setPhase('placeholders')} />}
+          onAddFields={() => setPhase('placeholders')}
+          regional={regional} formats={formatConventions} onFormatsChange={setFormatConventions} appliedMapping={columnMapping} />}
         <PicturesModal />
         <GenerateProgressModal open={isGenerating} onCancel={cancel} />
         <ErrorToast message={errorMsg ?? ''} visible={!!errorMsg} onDismiss={dismissError} sticky={errorSticky}

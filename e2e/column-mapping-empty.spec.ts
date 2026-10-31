@@ -63,3 +63,54 @@ test('when every field has a column the dialog keeps its old wording', async ({ 
   await expect(dialog.getByRole('button', { name: 'Looks good' })).toBeVisible();
   await expect(dialog.getByText(/have no column/)).toHaveCount(0);
 });
+
+test('Cancel in the dialog reopened from the preview keeps the spreadsheet', async ({ page }, testInfo) => {
+  const list = testInfo.outputPath('mismatch.xlsx');
+  fs.mkdirSync(path.dirname(list), { recursive: true });
+  writeMismatchList(list);
+
+  await page.goto(`${BASE}/start`);
+  await page.locator('input[type="file"]').setInputFiles(TEMPLATE);
+  await page.getByRole('button', { name: 'Add your data' }).click();
+  await page.locator('input[type="file"]').setInputFiles(list);
+  const dialog = page.getByRole('dialog');
+  await expect(dialog).toBeVisible({ timeout: 30_000 });
+  await dialog.getByRole('button', { name: 'Continue with 5 empty fields' }).click();
+  const bar = page.getByText('5 fields have no column: TRUEDATE, AMOUNT, EURO, PERCENT, TEXTDATE');
+  await expect(bar).toBeVisible({ timeout: 15_000 });
+
+  await page.getByRole('button', { name: 'Choose columns' }).click();
+  await expect(page.getByRole('dialog').getByText('5 fields have no column and will be empty:')).toBeVisible();
+  await page.getByRole('dialog').getByRole('button', { name: 'Cancel' }).click();
+  // Back in the preview with the same list: no new upload needed.
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(bar).toBeVisible();
+  await expect(page.getByText('Anna Ozola').first()).toBeVisible();
+});
+
+test('Cancel in the reopened dialog forgets a changed column', async ({ page }, testInfo) => {
+  const list = testInfo.outputPath('mismatch.xlsx');
+  fs.mkdirSync(path.dirname(list), { recursive: true });
+  writeMismatchList(list);
+
+  await page.goto(`${BASE}/start`);
+  await page.locator('input[type="file"]').setInputFiles(TEMPLATE);
+  await page.getByRole('button', { name: 'Add your data' }).click();
+  await page.locator('input[type="file"]').setInputFiles(list);
+  await expect(page.getByRole('dialog')).toBeVisible({ timeout: 30_000 });
+  await page.getByRole('dialog').getByRole('button', { name: 'Continue with 5 empty fields' }).click();
+  await expect(page.getByText('5 fields have no column: TRUEDATE, AMOUNT, EURO, PERCENT, TEXTDATE')).toBeVisible({ timeout: 15_000 });
+
+  await page.getByRole('button', { name: 'Choose columns' }).click();
+  const dialog = page.getByRole('dialog');
+  await expect(dialog.getByText('5 fields have no column and will be empty:')).toBeVisible();
+  await dialog.locator('span[title="Notes"]').locator('..').getByRole('combobox').click();
+  await page.getByRole('option', { name: 'TRUEDATE' }).click();
+  await expect(dialog.getByText('4 fields have no column and will be empty:')).toBeVisible();
+  await dialog.getByRole('button', { name: 'Cancel' }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+
+  // The next opening shows the matching the preview uses, not the cancelled one.
+  await page.getByRole('button', { name: 'Choose columns' }).click();
+  await expect(page.getByRole('dialog').getByText('5 fields have no column and will be empty:')).toBeVisible();
+});

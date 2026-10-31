@@ -7,6 +7,7 @@ import { RowNavigator } from '../RowNavigator';
 import { PreviewDocument } from '../PreviewDocument';
 import { FileNamesCard } from './FileNamesCard';
 import { ImageRailSummary } from '@/features/data/components/ImageIntakePanel';
+import { RegionalFormatBar } from '@/features/data/components/RegionalFormatBar';
 import { VeidneButton } from '@/shared/components/VeidneButton/VeidneButton';
 import { useStyles } from './PreviewPanel.styles';
 
@@ -23,6 +24,9 @@ export function PreviewPanel({ onBackToPlaceholders, onUploadData, transitionBea
   );
   const { currentPreviewRow, rows, nextRow, prevRow, getFilledValue } = useDataStore(
     useShallow((s) => ({ currentPreviewRow: s.currentPreviewRow, rows: s.rows, nextRow: s.nextRow, prevRow: s.prevRow, getFilledValue: s.getFilledValue })),
+  );
+  const { formatConventions, regionalColumns, setFormatConventions, isSampleData } = useDataStore(
+    useShallow((s) => ({ formatConventions: s.formatConventions, regionalColumns: s.regionalColumns, setFormatConventions: s.setFormatConventions, isSampleData: s.isSampleData })),
   );
   const hasData = rows.length > 0;
   const isWaiting = transitionBeat >= 1 && transitionBeat < 3;
@@ -56,6 +60,14 @@ export function PreviewPanel({ onBackToPlaceholders, onUploadData, transitionBea
               total: String(rows.length),
             })}
           </div>
+          {/* Phones only: the preview panel covers the document column there,
+              so the date and number line moves here (Editor shows it above
+              the document from 768 px). Sample rows are text: nothing to show. */}
+          {!isSampleData && (
+            <div className={s.formatsCard}>
+              <RegionalFormatBar variant="card" regional={regionalColumns} value={formatConventions} onChange={setFormatConventions} />
+            </div>
+          )}
           <ImageRailSummary />
           <FileNamesCard />
           <div className={s.documentArea}>

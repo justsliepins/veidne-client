@@ -30,6 +30,12 @@ export default defineConfig({
     baseURL: FEATURE_ON_URL,
     headless: true,
     trace: 'retain-on-failure',
+    // The app guesses the date and number style from the browser language
+    // and the Riga time zone, so every spec runs with fixed ones unless it
+    // asks for others with test.use({ locale, timezoneId }). en-US and UTC
+    // keep the US-style values the existing specs expect on any machine.
+    locale: 'en-US',
+    timezoneId: 'UTC',
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: [

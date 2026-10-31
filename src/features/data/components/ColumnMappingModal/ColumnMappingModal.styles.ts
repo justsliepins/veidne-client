@@ -102,6 +102,12 @@ export const useStyles = makeStyles({
     [media.below.md]: { width: 'auto', flexGrow: 1 },
     [media.below.sm]: { width: '100%' },
   },
+  // The date and number choice at the top of the scrolling table area.
+  formats: {
+    marginTop: '12px', marginLeft: '12px', marginRight: '12px', marginBottom: '12px',
+    backgroundColor: '#FFFFFF',
+    [media.below.sm]: { marginLeft: '16px', marginRight: '16px' },
+  },
   noticeBanner: {
     backgroundColor: '#FFFBEB',
     borderLeftStyle: 'solid',

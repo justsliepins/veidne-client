@@ -1,7 +1,9 @@
 import { create } from 'zustand';
-import { parseExcel } from '../utils/excelParser';
+import { parseExcel, type RegionalColumns } from '../utils/excelParser';
 import { fuzzyMatchColumns, normalizeForMatch } from '../utils/fuzzyMatch';
 import type { FuzzyMatchResult } from '../utils/fuzzyMatch';
+import type { FormatConventions } from '../utils/localeFormats';
+import { initialFormatConventions, saveFormatConventions } from '../utils/formatPreference';
 import { mappedFields, type NamingConfig } from '@/features/generator/utils/fileNaming';
 import { useEditorStore } from '@/features/editor/store/editorStore';
 
@@ -18,6 +20,17 @@ interface DataState {
    *  guided demo), so generations can be flagged in analytics. */
   isSampleData: boolean;
   namingConfig: NamingConfig;
+  /** How Excel shows short dates and number separators on the user's
+   *  computer. Applied when the spreadsheet is read, so the preview, the
+   *  documents and the file names all get the same text. A user preference,
+   *  so reset() keeps it; remembered in this browser only after a change. */
+  formatConventions: FormatConventions;
+  /** Columns of the loaded spreadsheet whose text depends on that choice. */
+  regionalColumns: RegionalColumns;
+  /** True after applyMapping dropped the rows that have no mapped value, so a
+   *  re-read for a new date or number style drops the same rows again. */
+  mappingApplied: boolean;
+  setFormatConventions: (next: Partial<FormatConventions>) => void;
   /** Dropped picture files for image fields, keyed by bare file name. */
   imageFiles: Map<string, Blob>;
   /** Manual per-row overrides: "<field> <rowIdx>" to a file name, or '' for
@@ -55,7 +68,17 @@ const initial = {
   namingConfig: { field: '', dupeMode: 'number', secondField: null } as NamingConfig,
   imageResolutions: {} as Record<string, string>,
   picturesPromptShown: false,
+  regionalColumns: { dates: [], numbers: [] } as RegionalColumns,
+  mappingApplied: false,
 };
+
+/** The rows that fill at least one mapped column (all rows when nothing is mapped). */
+function rowsWithMappedValues(rows: Record<string, string>[], mapping: Record<string, string>): Record<string, string>[] {
+  const mappedCols = Object.keys(mapping);
+  return mappedCols.length > 0
+    ? rows.filter(row => mappedCols.some(col => (row[col] ?? '').trim() !== ''))
+    : rows;
+}
 
 /** Default naming config for a freshly applied mapping: name by the first mapped field. */
 function defaultNamingConfig(mapping: Record<string, string>): NamingConfig {
@@ -74,19 +97,32 @@ function scheduleBeat(set: (s: Partial<DataState>) => void, beat: number, delay:
   }, delay);
 }
 
-async function parseFile(file: File) {
+async function parseFile(file: File, conventions: FormatConventions) {
   const buf = await file.arrayBuffer();
-  const { columns, rows } = parseExcel(buf);
+  const { columns, rows, regional } = parseExcel(buf, conventions);
   const phNames = useEditorStore.getState().placeholders.map(p => p.name);
   const matchResult = fuzzyMatchColumns(columns, phNames);
   const columnMapping: Record<string, string> = {};
   for (const m of matchResult.matched) columnMapping[m.column] = m.placeholder;
-  return { rawXlsxBytes: buf, fileName: file.name, columns, rows, matchResult, columnMapping };
+  return { rawXlsxBytes: buf, fileName: file.name, columns, rows, regionalColumns: regional, mappingApplied: false, matchResult, columnMapping };
 }
 
 export const useDataStore = create<DataState>((set, get) => ({
   ...initial,
+  formatConventions: initialFormatConventions(),
   imageFiles: new Map<string, Blob>(),
+
+  // A new style re-reads the spreadsheet from its bytes (the stored rows are
+  // text already) and keeps the column choice, the row filter and the row.
+  setFormatConventions: (next) => {
+    const formatConventions = { ...get().formatConventions, ...next };
+    saveFormatConventions(formatConventions);
+    const { rawXlsxBytes, columnMapping, mappingApplied, currentPreviewRow } = get();
+    if (!rawXlsxBytes) { set({ formatConventions }); return; }
+    const parsed = parseExcel(rawXlsxBytes, formatConventions).rows;
+    const rows = mappingApplied ? rowsWithMappedValues(parsed, columnMapping) : parsed;
+    set({ formatConventions, rows, currentPreviewRow: Math.max(0, Math.min(currentPreviewRow, rows.length - 1)) });
+  },
 
   addImageFiles: (files) => {
     const next = new Map(get().imageFiles);
@@ -125,28 +161,24 @@ export const useDataStore = create<DataState>((set, get) => ({
     const hasPlaceholders = useEditorStore.getState().placeholders.length > 0;
     if (!hasPlaceholders) {
       const buf = await file.arrayBuffer();
-      const { columns, rows } = parseExcel(buf);
-      set({ rawXlsxBytes: buf, fileName: file.name, columns, rows, matchResult: null, columnMapping: {}, currentPreviewRow: 0, editorPhase: 'excelUpload', dataSubState: 'matchData', isSampleData: false, imageResolutions: {} });
+      const { columns, rows, regional } = parseExcel(buf, get().formatConventions);
+      set({ rawXlsxBytes: buf, fileName: file.name, columns, rows, regionalColumns: regional, mappingApplied: false, matchResult: null, columnMapping: {}, currentPreviewRow: 0, editorPhase: 'excelUpload', dataSubState: 'matchData', isSampleData: false, imageResolutions: {} });
       return;
     }
-    const data = await parseFile(file);
+    const data = await parseFile(file, get().formatConventions);
     // New rows make old per-row picture choices meaningless.
     set({ ...data, currentPreviewRow: 0, editorPhase: 'mapping', dataSubState: 'mapping', isSampleData: false, imageResolutions: {} });
   },
 
   replaceExcel: async (file) => {
-    const data = await parseFile(file);
+    const data = await parseFile(file, get().formatConventions);
     set({ ...data, currentPreviewRow: 0, editorPhase: 'mapping', dataSubState: 'mapping', isSampleData: false, imageResolutions: {} });
   },
 
   applyMapping: (mapping) => {
-    const { rows } = get();
-    const mappedCols = Object.keys(mapping);
-    const effectiveRows = mappedCols.length > 0
-      ? rows.filter(row => mappedCols.some(col => (row[col] ?? '').trim() !== ''))
-      : rows;
+    const effectiveRows = rowsWithMappedValues(get().rows, mapping);
     clearBeatTimer();
-    set({ columnMapping: mapping, rows: effectiveRows, currentPreviewRow: 0, editorPhase: 'preview', dataTransitionBeat: 1, dataSubState: 'preview', namingConfig: defaultNamingConfig(mapping) });
+    set({ columnMapping: mapping, rows: effectiveRows, mappingApplied: true, currentPreviewRow: 0, editorPhase: 'preview', dataTransitionBeat: 1, dataSubState: 'preview', namingConfig: defaultNamingConfig(mapping) });
     scheduleBeat(set, 2, 800);
     get().maybeRouteToPictures();
   },
@@ -154,11 +186,19 @@ export const useDataStore = create<DataState>((set, get) => ({
   setNamingConfig: (partial) => set(s => ({ namingConfig: { ...s.namingConfig, ...partial } })),
 
   cancelMapping: () => {
+    // Reopened from the preview with "Choose columns": Cancel goes back to the
+    // preview and keeps the spreadsheet and the matching already applied. Only
+    // the first opening, before anything was applied, discards the spreadsheet.
+    if (get().mappingApplied) {
+      set({ editorPhase: 'preview', dataSubState: 'preview' });
+      return;
+    }
     clearBeatTimer();
     set({
       rawXlsxBytes: null, fileName: null, columns: [], rows: [],
       columnMapping: {}, matchResult: null, currentPreviewRow: 0, editorPhase: 'placeholders', dataTransitionBeat: 0, dataSubState: 'bridge',
       namingConfig: { field: '', dupeMode: 'number', secondField: null },
+      regionalColumns: { dates: [], numbers: [] }, mappingApplied: false,
     });
   },
 
@@ -186,7 +226,7 @@ export const useDataStore = create<DataState>((set, get) => ({
     const matchResult = fuzzyMatchColumns(columns, phNames);
     const columnMapping: Record<string, string> = {};
     for (const m of matchResult.matched) columnMapping[m.column] = m.placeholder;
-    set({ matchResult, columnMapping, editorPhase: 'mapping', dataSubState: 'mapping' });
+    set({ matchResult, columnMapping, mappingApplied: false, editorPhase: 'mapping', dataSubState: 'mapping' });
   },
 
   setKitDownloaded: (v) => set({ kitDownloaded: v }),

@@ -51,6 +51,9 @@ export const useStyles = makeStyles({
   },
   documentWrapperFull: { paddingRight: '0' },
   documentColumn: { display: 'flex', flexDirection: 'column', flexGrow: 1, minWidth: 0, overflow: 'hidden', minHeight: '0' },
+  // The date and number line under the data-loaded bar. Below 768 px the
+  // preview panel covers this column, so PreviewPanel shows it there instead.
+  formatsBar: { flexShrink: 0, [media.below.md]: { display: 'none' } },
   content: {
     flexGrow: 1,
     display: 'flex',

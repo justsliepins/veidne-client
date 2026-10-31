@@ -53,6 +53,7 @@ export const useStyles = makeStyles({
     ':hover': { textDecorationLine: 'underline' },
   },
   navigatorArea: { display: 'flex', justifyContent: 'center', padding: '12px 0' },
+  formatsCard: { display: 'none', [media.below.md]: { display: 'block' } },
   rowIndicator: {
     marginLeft: '20px', marginRight: '20px',
     padding: '8px 12px',
