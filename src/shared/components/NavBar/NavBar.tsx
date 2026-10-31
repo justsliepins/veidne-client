@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { mergeClasses } from '@fluentui/react-components';
 import { Navigation24Regular, Dismiss24Regular } from '@fluentui/react-icons';
@@ -24,6 +24,52 @@ export function NavBar({ variant = 'light', editor = false }: NavBarProps) {
 
   const openMenu = useCallback(() => setMobileMenuOpen(true), []);
   const closeMenu = useCallback(() => setMobileMenuOpen(false), []);
+
+  // Mobile drawer keyboard path (WCAG 2.4.3, 2.1.2): on open, focus moves to the
+  // close button; Tab and Shift+Tab stay inside the drawer; Escape closes it;
+  // on close, focus returns to the Menu button.
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const drawerRef = useRef<HTMLDivElement>(null);
+  const wasOpen = useRef(false);
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      wasOpen.current = true;
+      closeButtonRef.current?.focus();
+      // The page behind the open drawer is out of reach for a screen reader's
+      // virtual cursor too, not only for Tab (review c, finding 18).
+      const behind = [document.getElementById('main-content'), document.querySelector('footer')].filter((el): el is HTMLElement => el !== null);
+      behind.forEach((el) => el.setAttribute('inert', ''));
+      const onKey = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          setMobileMenuOpen(false);
+          return;
+        }
+        if (e.key !== 'Tab' || !drawerRef.current) return;
+        const focusable = drawerRef.current.querySelectorAll<HTMLElement>('a[href], button:not([disabled])');
+        if (focusable.length === 0) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      };
+      document.addEventListener('keydown', onKey);
+      return () => {
+        document.removeEventListener('keydown', onKey);
+        behind.forEach((el) => el.removeAttribute('inert'));
+      };
+    }
+    if (wasOpen.current) {
+      wasOpen.current = false;
+      menuButtonRef.current?.focus();
+    }
+  }, [mobileMenuOpen]);
   const openBugReport = useCallback(() => setBugReportOpen(true), []);
   const closeBugReport = useCallback(() => setBugReportOpen(false), []);
 
@@ -69,6 +115,8 @@ export function NavBar({ variant = 'light', editor = false }: NavBarProps) {
           className={mergeClasses(styles.hamburger, isLight ? styles.hamburgerLight : styles.hamburgerDark)}
           onClick={openMenu}
           aria-expanded={mobileMenuOpen}
+          aria-controls="mobile-menu"
+          ref={menuButtonRef}
         >
           <Navigation24Regular aria-hidden="true" />
           <span className={styles.menuWord}>{t('nav.menu')}</span>
@@ -89,6 +137,8 @@ export function NavBar({ variant = 'light', editor = false }: NavBarProps) {
           isLight ? styles.drawerLight : styles.drawerDark,
           mobileMenuOpen && styles.drawerOpen,
         )}
+        id="mobile-menu"
+        ref={drawerRef}
         role="dialog"
         aria-label={t('a11y.mobileMenu')}
         aria-modal="true"
@@ -99,6 +149,7 @@ export function NavBar({ variant = 'light', editor = false }: NavBarProps) {
           className={mergeClasses(styles.drawerClose, isLight ? styles.drawerCloseLight : styles.drawerCloseDark)}
           onClick={closeMenu}
           aria-label={t('a11y.closeMenu')}
+          ref={closeButtonRef}
         >
           <Dismiss24Regular />
         </button>
