@@ -30,7 +30,7 @@ interface PdfFlowProps {
   onDownloadFile?: (stem: string) => void;
   /** Optional: invoked after a single PDF has been downloaded from a list
    *  row, so the Done screen can treat it like any single-file download. */
-  onAfterFileDownload?: () => void;
+  onAfterFileDownload?: (stem: string) => void;
 }
 
 const ShieldGlyph = () => (
@@ -158,7 +158,7 @@ export function PdfFlow({ files, baseName, onDownloadWord, onAfterDownload, onDo
     const job = status.status.jobs.find((j) => j.index === index);
     if (!job?.downloadToken) return usePdfStore.getState().markResultExpired();
     const res = await downloadSinglePdf(job.jobId, job.downloadToken);
-    if (res.outcome === 'ok') { triggerDownload(res.blob, `${stem}.pdf`); onAfterFileDownload?.(); }
+    if (res.outcome === 'ok') { triggerDownload(res.blob, `${stem}.pdf`); onAfterFileDownload?.(stem); }
     else usePdfStore.getState().markResultExpired();
   };
 

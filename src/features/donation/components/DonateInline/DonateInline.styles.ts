@@ -15,6 +15,7 @@ export const useStyles = makeStyles({
   },
   // Sub-heading, not the page h1.
   heading: {
+    ...shorthands.margin('0'),
     fontSize: '18px', lineHeight: '24px', fontWeight: 600, letterSpacing: '-0.01em',
     color: '#1A1622',
   },
@@ -42,12 +43,13 @@ export const useStyles = makeStyles({
     ':disabled': { opacity: '0.55', cursor: 'not-allowed' },
     '@media (prefers-reduced-motion: reduce)': { transitionProperty: 'none' },
   },
+  // #46529E keeps the 11px sub-label at 6.9:1 (it was 4.2:1 on #5566C4 at 85% opacity).
   chipActive: {
-    backgroundColor: '#5566C4', ...shorthands.borderColor('#5566C4'), color: '#FFFFFF',
-    ':hover': { backgroundColor: '#46529E', ...shorthands.borderColor('#46529E') },
+    backgroundColor: '#46529E', ...shorthands.borderColor('#46529E'), color: '#FFFFFF',
+    ':hover': { backgroundColor: '#3A4588', ...shorthands.borderColor('#3A4588') },
   },
   chipAmount: { fontSize: '15px', lineHeight: '20px', fontWeight: 600 },
-  chipSub: { fontSize: '11px', lineHeight: '14px', fontWeight: 400, opacity: '0.85' },
+  chipSub: { fontSize: '11px', lineHeight: '14px', fontWeight: 400 },
   // Revealed custom row. The max-height transition is the only motion; it is
   // disabled under reduced-motion so the row simply appears.
   customRegion: {
@@ -70,7 +72,8 @@ export const useStyles = makeStyles({
   customInput: {
     width: '120px', minHeight: '44px', boxSizing: 'border-box',
     borderRadius: '11px',
-    ...shorthands.borderStyle('solid'), ...shorthands.borderWidth('1px'), ...shorthands.borderColor('rgba(26, 22, 34, 0.18)'),
+    // 3.6:1 on white: a field border needs 3:1 (WCAG 1.4.11).
+    ...shorthands.borderStyle('solid'), ...shorthands.borderWidth('1px'), ...shorthands.borderColor('#8A8494'),
     ...shorthands.padding('0', '14px'),
     fontSize: '15px', lineHeight: '24px', fontWeight: 400, color: '#1A1622',
     outlineStyle: 'none',
@@ -92,11 +95,21 @@ export const useStyles = makeStyles({
     [media.below.sm]: { width: '100%' },
   },
   micro: {
-    fontSize: '12px', lineHeight: '18px', fontWeight: 400, color: '#767077',
+    fontSize: '12px', lineHeight: '18px', fontWeight: 400, color: '#5E5560',
     maxWidth: '420px', marginLeft: 'auto', marginRight: 'auto',
   },
   // Error sits in an aria-live region; it conveys meaning in text, not color alone.
   error: {
-    fontSize: '13px', lineHeight: '20px', fontWeight: 500, color: '#EF4444',
+    fontSize: '13px', lineHeight: '20px', fontWeight: 500, color: '#B91C1C',
+  },
+  customError: {
+    fontSize: '13px', lineHeight: '20px', fontWeight: 500, color: '#B91C1C',
+  },
+  blocked: {
+    fontSize: '13px', lineHeight: '20px', color: '#3F3A46', textAlign: 'center',
+  },
+  blockedLink: {
+    color: '#46529E', fontWeight: 600, textDecorationLine: 'underline',
+    ':focus-visible': { outlineWidth: '2px', outlineStyle: 'solid', outlineColor: '#5566C4', outlineOffset: '2px' },
   },
 });

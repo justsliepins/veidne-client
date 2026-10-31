@@ -1,19 +1,23 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, useReducer } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useShallow } from 'zustand/react/shallow';
 import { mergeClasses } from '@fluentui/react-components';
-import { Checkmark28Regular } from '@fluentui/react-icons';
+import { Checkmark28Regular, CheckmarkCircle20Regular } from '@fluentui/react-icons';
 import { t } from '@/i18n/i18n';
 import { tCount } from '@/i18n/plural';
+import { trackEvent } from '@/services/analyticsService';
 import { getConvertApiUrl } from '@/services/pdfConversion';
+import { features } from '@/config/features';
 import { useEditorStore } from '@/features/editor/store/editorStore';
 import { useDataStore } from '@/features/data/store/dataStore';
 import { useGeneratorStore } from '../../store/generatorStore';
 import { downloadTaggedTemplate, downloadUploadedSpreadsheet } from '../../utils/sourceFiles';
 import { usePdfStore } from '../../store/pdfStore';
+import { useDoneGuard } from '../../store/doneGuard';
 import { DonateInline } from '@/features/donation/components/DonateInline';
-import { ReviewAsk } from '@/features/donation/components/ReviewAsk';
-import { DownloadCompleteModal } from '@/features/donation/components/DownloadCompleteModal';
+import { FeedbackAsk } from '@/features/donation/components/FeedbackAsk';
+import { DownloadCompleteModal, type DismissMethod } from '@/features/donation/components/DownloadCompleteModal';
+import { isRecentDonor, isRecentlyDeclined, rememberDecline } from '@/features/donation/utils/askMemory';
 import { FileList } from '../../components/FileList';
 import { PdfFlow } from '../../components/PdfFlow';
 import { useStyles } from './DoneView.styles';
@@ -22,42 +26,40 @@ interface DoneViewProps {
   isDemo?: boolean;
 }
 
-// Whether the user has already had the full review card on screen. The
-// condensed one-line ask shows under the download actions on every real run;
-// the full card additionally shows below the donate card until it has actually
-// been seen once, which ReviewAsk's visibility observer reports. localStorage
-// can throw in private mode, so every access is guarded; any failure means
-// "not seen" (show the full card) and we simply skip writing.
-const SUPPORT_ASK_KEY = 'veidne_supportAskSeen';
-const SUPPORT_ASK_VALUE = '1';
+// How the donation ask behaves after the first download of a run.
+//  'modal'  : the dialog opens once (today's behaviour, made calmer); after it
+//             closes, a one-line reminder stays near the top of the page.
+//  'inline' : no dialog; the donation card moves up under the saved notice.
+// 'inline' is a hypothesis to test with users first (features.expAskInline,
+// off unless VITE_EXP_ASK_INLINE=true); the once-per-run and decline rules are not.
+const ASK_AFTER_DOWNLOAD: 'modal' | 'inline' = features.expAskInline ? 'inline' : 'modal';
 
-function isSupportAskSeen(): boolean {
-  try {
-    return localStorage.getItem(SUPPORT_ASK_KEY) === SUPPORT_ASK_VALUE;
-  } catch {
-    return false;
-  }
-}
-
-function rememberSupportAskSeen(): void {
-  try {
-    localStorage.setItem(SUPPORT_ASK_KEY, SUPPORT_ASK_VALUE);
-  } catch {
-    /* private mode or storage full: proceed without remembering */
-  }
-}
-
-// Quiet time after a single-file download before the modal may open, so a
+// Quiet time after a single-file download before the dialog may open, so a
 // file-by-file run is never interrupted mid-way.
 const FILE_MODAL_DELAY_MS = 4000;
 
-// The post-download modal opens once per kind of download per run: a bulk
-// Word download, a PDF download and a single file from the list each open it
-// the first time they happen in a run and not again. Keyed on the run's
-// generated files array, at module level rather than in state or a ref,
-// because the Done screen can mount more than once for one run.
+// Per-run memory at module level, because the Done screen can mount more
+// than once for one run (StrictMode, the PDF consent gate, the stale-phase
+// remount). Keyed on the run's generated files array.
+const modalOpenedForRun: { run: object | null } = { run: null };
+
 type DownloadKind = 'word' | 'pdf' | 'file';
-const downloadModalOpenedForRun: Record<DownloadKind, object | null> = { word: null, pdf: null, file: null };
+
+// What was downloaded in each run: the whole set (the Word zip or the PDFs)
+// or single files, by name. The protection lasts until every document is
+// saved, so checking one file of 24 does not end it (review a, finding 2).
+// The marked template and the spreadsheet are not documents and do not count.
+interface RunDownloads { set: boolean; singles: Set<string>; last: DownloadKind | null }
+const runDownloads = new WeakMap<object, RunDownloads>();
+function downloadsFor(run: object): RunDownloads {
+  let d = runDownloads.get(run);
+  if (!d) { d = { set: false, singles: new Set<string>(), last: null }; runDownloads.set(run, d); }
+  return d;
+}
+function savedCountOf(run: object, count: number): number {
+  const d = downloadsFor(run);
+  return d.set ? count : Math.min(d.singles.size, count);
+}
 
 export function DoneView({ isDemo }: DoneViewProps) {
   const s = useStyles();
@@ -65,130 +67,156 @@ export function DoneView({ isDemo }: DoneViewProps) {
     useShallow((s) => ({ generatedFiles: s.generatedFiles, downloadFile: s.downloadFile, downloadAll: s.downloadAll, baseName: s.baseName })),
   );
   const isSampleData = useDataStore((s) => s.isSampleData);
-  // The user's own files, offered back. The saved session is already cleared
-  // by the time this screen shows, so this row is the last way to keep the
-  // tagged template. The spreadsheet is offered only while its uploaded bytes
-  // are still held (never rebuilt from the parsed rows).
   const hasTemplate = useEditorStore((e) => e.rawDocxBytes !== null && e.placeholders.length > 0);
   const hasSpreadsheet = useDataStore((d) => d.rawXlsxBytes !== null);
-  // PDF feature gate: null converter URL means render zero new UI (today's app).
   const pdfOn = getConvertApiUrl() !== null;
   const pdfPhase = usePdfStore((s) => s.phase);
-  // Read once at mount: until the full review card has been seen once, a real
-  // completion shows it below the donate card. Written only when the card has
-  // actually been on screen, so a visitor who never scrolled down still gets
-  // it next time.
-  const [fullCardSeen] = useState(isSupportAskSeen);
-  const [downloadModalOpen, setDownloadModalOpen] = useState(false);
-  const [downloadModalSource, setDownloadModalSource] = useState('word');
-  // The run the modal has opened for, if any. While it matches the current run
-  // the inline donate card stays hidden, so there is only ever one ask on
-  // screen: the modal while open, nothing afterwards.
-  const [modalShownForRun, setModalShownForRun] = useState<object | null>(null);
-  // Open the post-download modal for real runs only (never sample or demo
-  // data), once per download kind per run. The inline ReviewAsk remains
-  // available either way.
-  const maybeShowDownloadModal = useCallback((source: DownloadKind) => {
-    if (isSampleData || generatedFiles.length === 0) return;
-    if (downloadModalOpenedForRun[source] === generatedFiles) return;
-    downloadModalOpenedForRun[source] = generatedFiles;
-    setModalShownForRun(generatedFiles);
-    setDownloadModalSource(source);
-    setDownloadModalOpen(true);
-  }, [isSampleData, generatedFiles]);
-  // Timer for the single-file case below; bulk and PDF downloads clear it.
-  const fileModalTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const fileModalArmed = useRef(false);
-  const clearFileModalTimer = useCallback(() => {
-    if (fileModalTimer.current !== null) {
-      clearTimeout(fileModalTimer.current);
-      fileModalTimer.current = null;
-    }
+  const count = generatedFiles.length;
+  const realRun = count > 0 && !isSampleData;
+
+  // Read once per mount: donors are thanked instead of asked; after a recent
+  // "No thanks" the dialog stays away but the quiet line remains.
+  const [donor] = useState(isRecentDonor);
+  const [declinedRecently] = useState(isRecentlyDeclined);
+
+  // Re-render after a download; the run's downloads live in runDownloads.
+  const [, bump] = useReducer((n: number) => n + 1, 0);
+  const savedCount = savedCountOf(generatedFiles, count);
+  const downloaded = savedCount > 0;
+  const lastDownload = downloadsFor(generatedFiles).last;
+  // Until every document has been downloaded, losing them asks first.
+  const protect = realRun && savedCount < count;
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalSource, setModalSource] = useState<string>('word');
+  const [modalDone, setModalDone] = useState(() => modalOpenedForRun.run === generatedFiles);
+  const [askExpanded, setAskExpanded] = useState(false);
+  const [confirmDiscard, setConfirmDiscard] = useState<null | 'new' | 'same'>(null);
+  const confirmText = savedCount > 0 ? t('done.confirm.textSome') : tCount(count, 'done.confirm.text');
+
+  // The documents exist only in this tab: the saved session was cleared when
+  // generation finished. Until every document has been downloaded, closing or
+  // reloading the tab asks first (audit finding 3), and so does leaving inside
+  // the app: the editor's router blocker asks with the same text.
+  useEffect(() => {
+    if (!protect) return;
+    const warn = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ''; };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [protect]);
+  useEffect(() => {
+    useDoneGuard.getState().setMessage(protect ? confirmText : null);
+    return () => useDoneGuard.getState().setMessage(null);
+  }, [protect, confirmText]);
+
+  const markDownloaded = useCallback((kind: DownloadKind, stem?: string) => {
+    const d = downloadsFor(generatedFiles);
+    if (kind === 'file') { if (stem !== undefined) d.singles.add(stem); } else d.set = true;
+    d.last = kind;
+    bump();
+  }, [generatedFiles]);
+
+  const maybeShowModal = useCallback((source: DownloadKind) => {
+    if (!realRun || donor || declinedRecently || ASK_AFTER_DOWNLOAD !== 'modal') return;
+    if (modalOpenedForRun.run === generatedFiles) return; // once per run, whatever the kind
+    modalOpenedForRun.run = generatedFiles;
+    setModalSource(source);
+    setModalOpen(true);
+  }, [realRun, donor, declinedRecently, generatedFiles]);
+
+  const closeModal = useCallback((method: DismissMethod) => {
+    setModalOpen(false);
+    setModalDone(true);
+    trackEvent('donation_ask_dismissed', { method, surface: 'modal' });
+    if (method === 'no_thanks') rememberDecline();
   }, []);
-  useEffect(() => clearFileModalTimer, [clearFileModalTimer]);
-  // The download always runs first; the modal is opened only afterwards. For the
-  // async zip download we await the save before showing, so the modal never
-  // delays or blocks the download.
+  // Checkout opened in a new tab from the dialog: the dialog has done its job.
+  // It closes without a dismissal event (nobody declined), and the quiet line
+  // takes its place (review b, finding 9).
+  const closeModalAfterCheckout = useCallback(() => {
+    setModalOpen(false);
+    setModalDone(true);
+  }, []);
+
+  const fileTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const clearFileTimer = useCallback(() => {
+    if (fileTimer.current !== null) { clearTimeout(fileTimer.current); fileTimer.current = null; }
+  }, []);
+  useEffect(() => clearFileTimer, [clearFileTimer]);
+
   const handleWordDownload = useCallback(async () => {
     await downloadAll();
-    clearFileModalTimer();
-    fileModalArmed.current = false;
-    maybeShowDownloadModal('word');
-  }, [downloadAll, clearFileModalTimer, maybeShowDownloadModal]);
+    clearFileTimer();
+    markDownloaded('word');
+    maybeShowModal('word');
+  }, [downloadAll, clearFileTimer, markDownloaded, maybeShowModal]);
   const handlePdfAfterDownload = useCallback(() => {
-    clearFileModalTimer();
-    fileModalArmed.current = false;
-    maybeShowDownloadModal('pdf');
-  }, [clearFileModalTimer, maybeShowDownloadModal]);
-  // A single file from the list arms the modal, but someone saving seven files
-  // one by one must never get it over the list mid-task, so every further
-  // download in the sequence resets a short timer and the modal opens only
-  // once downloads have stopped. The once-per-kind guard above then keeps it
-  // from returning for later files in the run. The bulk and PDF downloads
-  // above open it at once, since nothing is left to do after them.
-  const noteSingleDownload = useCallback(() => {
-    clearFileModalTimer();
-    fileModalArmed.current = true;
-    fileModalTimer.current = setTimeout(() => {
-      fileModalTimer.current = null;
-      fileModalArmed.current = false;
-      maybeShowDownloadModal('file');
-    }, FILE_MODAL_DELAY_MS);
-  }, [clearFileModalTimer, maybeShowDownloadModal]);
+    clearFileTimer();
+    markDownloaded('pdf');
+    maybeShowModal('pdf');
+  }, [clearFileTimer, markDownloaded, maybeShowModal]);
+  const noteSingleDownload = useCallback((stem: string) => {
+    markDownloaded('file', stem);
+    clearFileTimer();
+    fileTimer.current = setTimeout(() => { fileTimer.current = null; maybeShowModal('file'); }, FILE_MODAL_DELAY_MS);
+  }, [clearFileTimer, markDownloaded, maybeShowModal]);
   const handleFileDownload = useCallback((index: number) => {
     downloadFile(index);
-    noteSingleDownload();
-  }, [downloadFile, noteSingleDownload]);
-  // The PDF branch's rows name files by stem; same single-file path as above.
+    noteSingleDownload(generatedFiles[index]?.stem ?? String(index));
+  }, [downloadFile, noteSingleDownload, generatedFiles]);
   const handleFileDownloadByStem = useCallback((stem: string) => {
     const index = generatedFiles.findIndex((f) => f.stem === stem);
     if (index >= 0) handleFileDownload(index);
   }, [generatedFiles, handleFileDownload]);
+
   const navigate = useNavigate();
-  const handleStartOver = useCallback(() => {
+  // `downloaded` in start_over means every document was saved first.
+  const startNew = useCallback(() => {
+    trackEvent('start_over', { downloaded: savedCountOf(generatedFiles, count) >= count, keep: 'none' });
+    useDoneGuard.getState().setMessage(null);
+    useEditorStore.getState().reset(); useDataStore.getState().reset();
+    useGeneratorStore.getState().reset(); navigate('/editor');
+  }, [navigate, generatedFiles, count]);
+  // From the end of a sample run to the person's own files: the same move as
+  // "Use my files" in the sample banner, so the same event (review b, 17).
+  const useOwnFiles = useCallback(() => {
+    trackEvent('instant_preview_swapped');
     useEditorStore.getState().reset(); useDataStore.getState().reset();
     useGeneratorStore.getState().reset(); navigate('/editor');
   }, [navigate]);
+  // Same template, new spreadsheet: the marked fields stay, the data step opens.
+  const startSameTemplate = useCallback(() => {
+    trackEvent('start_over', { downloaded: savedCountOf(generatedFiles, count) >= count, keep: 'template' });
+    useDoneGuard.getState().setMessage(null);
+    useGeneratorStore.getState().reset();
+    const d = useDataStore.getState();
+    d.reset(); d.setPhase('excelUpload'); d.setDataSubState('upload');
+  }, [generatedFiles, count]);
+  const requestStart = useCallback((which: 'new' | 'same') => {
+    if (realRun && savedCountOf(generatedFiles, count) < count) { setConfirmDiscard(which); return; }
+    if (which === 'new') startNew(); else startSameTemplate();
+  }, [realRun, generatedFiles, count, startNew, startSameTemplate]);
+  // "Keep them" puts focus back on the button that asked (WCAG 2.4.3).
+  const newBtnRef = useRef<HTMLButtonElement>(null);
+  const sameBtnRef = useRef<HTMLButtonElement>(null);
+  const keepFocus = useRef<null | 'new' | 'same'>(null);
+  const keepThem = useCallback(() => { keepFocus.current = confirmDiscard; setConfirmDiscard(null); }, [confirmDiscard]);
+  useEffect(() => {
+    if (confirmDiscard !== null || keepFocus.current === null) return;
+    (keepFocus.current === 'same' ? sameBtnRef : newBtnRef).current?.focus();
+    keepFocus.current = null;
+  }, [confirmDiscard]);
+
+  // "Try Demo Again" from the demo's last screen: a full page load, like
+  // "Start with My Template", because a link to the route already mounted
+  // would not start the demo again (review b, finding 3).
   const handleRestartDemo = useCallback(() => {
     useEditorStore.getState().reset(); useDataStore.getState().reset();
-    useGeneratorStore.getState().reset(); navigate('/editor?flow=exploring');
-  }, [navigate]);
+    useGeneratorStore.getState().reset(); window.location.assign('/editor?flow=exploring');
+  }, []);
   const handleStartTemplate = useCallback(() => {
     useEditorStore.getState().reset(); useDataStore.getState().reset();
     useGeneratorStore.getState().reset(); window.location.assign('/editor?flow=template-data');
   }, []);
-
-  // The inline donation ask on this screen. It needs a run with files (never
-  // the stale-phase remount, whose store is reset to zero files), a sample run
-  // (instant preview) gets none, nothing is asked while the PDF consent gate is
-  // up, and once the post-download modal has carried the ask for this run the
-  // card stays hidden.
-  const showAsk = generatedFiles.length > 0 && !isSampleData && pdfPhase !== 'consent'
-    && modalShownForRun !== generatedFiles;
-  // The review ask follows the same real-run rule as the donate card (a run
-  // with files, never sample data, never on the consent gate). The condensed
-  // line sits directly under the download actions, inside the first screen,
-  // on every run; the full card sits below the donate card until it has been
-  // seen once. The modal does not hide either: once it has carried the
-  // donation ask, the review line is the one ask left on the page.
-  const showReview = generatedFiles.length > 0 && !isSampleData && pdfPhase !== 'consent';
-  const reviewLine = showReview && <ReviewAsk condensed runKey={generatedFiles} />;
-  const reviewCard = showReview && !fullCardSeen
-    && <ReviewAsk condensed={false} runKey={generatedFiles} onSeen={rememberSupportAskSeen} />;
-  const showSourceFiles = hasTemplate && !isSampleData && pdfPhase !== 'consent';
-  const sourceFiles = showSourceFiles && (
-    <div className={s.sourceRow}>
-      <span className={s.sourceLabel}>{t('done.sourceFiles.title')}</span>
-      <button type="button" className={s.sourceLink} onClick={() => downloadTaggedTemplate('done')}>
-        {t('done.sourceFiles.docx')}
-      </button>
-      {hasSpreadsheet && (
-        <button type="button" className={s.sourceLink} onClick={() => downloadUploadedSpreadsheet('done')}>
-          {t('done.sourceFiles.xlsx')}
-        </button>
-      )}
-    </div>
-  );
 
   if (isDemo) {
     return (
@@ -196,9 +224,7 @@ export function DoneView({ isDemo }: DoneViewProps) {
         <div className={s.successIcon}>
           <Checkmark28Regular />
         </div>
-        <div className={s.title}>
-          {tCount(generatedFiles.length, 'demo.complete.title')}
-        </div>
+        <h1 className={s.title} data-done-heading tabIndex={-1}>{tCount(count, 'demo.complete.title')}</h1>
         <div className={s.demoSubtitle}>{t('demo.complete.subtitle')}</div>
         <button type="button" className={s.demoCta} onClick={handleStartTemplate}>
           {t('demo.cta.button')}
@@ -215,77 +241,159 @@ export function DoneView({ isDemo }: DoneViewProps) {
     );
   }
 
-  // PDF on: delegate the action/list region to PdfFlow. The Word "documents
-  // ready" framing shows only while the PDF flow is at its entry; once a
-  // conversion is sending/converting/done, PdfFlow owns the panel heading so the
-  // surface reads as a single evolving panel (the wireframe contract).
+  const consent = pdfPhase === 'consent';
+
+  // The donation ask, in one place per state. Never on sample data, never on
+  // the PDF consent gate.
+  const donorThanks = realRun && !consent && donor && (
+    <div className={s.quietAsk}>
+      <span>{t('done.ask.donor')}</span>
+      {!askExpanded && <button type="button" className={s.quietBtn} onClick={() => setAskExpanded(true)}>{t('done.ask.again')}</button>}
+    </div>
+  );
+  // After the first download: the dialog carried the ask, or recently declined.
+  const quietAfter = realRun && !consent && !donor && downloaded && !modalOpen
+    && (ASK_AFTER_DOWNLOAD === 'modal' ? (modalDone || declinedRecently) : declinedRecently);
+  const quietLine = quietAfter && !askExpanded && (
+    <div className={s.quietAsk}>
+      <span>{t('done.ask.quiet')}</span>
+      <button type="button" className={s.quietBtn} onClick={() => setAskExpanded(true)}>{t('done.ask.show')}</button>
+    </div>
+  );
+  // Inline variant under test: the card itself moves up after the download.
+  const cardTop = realRun && !consent && !donor && downloaded && ASK_AFTER_DOWNLOAD === 'inline' && !declinedRecently;
+  const cardExpanded = realRun && !consent && askExpanded;
+  // Before any download the card sits below the files, as today.
+  const cardBelow = realRun && !consent && !donor && !downloaded && !declinedRecently;
+  // Opened by "Support Veidne" or "Give again", the card takes the place of
+  // the button just pressed, so focus moves to its heading (WCAG 2.4.3).
+  const donateCard = <DonateInline count={count} runKey={generatedFiles} surface="inline" focusHeading={askExpanded} />;
+
+  // The status element is in the page from the first render and only its
+  // text changes, so screen readers announce it (WCAG 4.1.3). Empty, it is
+  // visually hidden and takes no space in the column.
+  const savedText = realRun && downloaded && lastDownload
+    ? (lastDownload === 'word' ? t('done.saved.word', { file: `${baseName || 'documents'}.zip`, count: tCount(count, 'count.wordFiles') })
+      : lastDownload === 'pdf' ? t('done.saved.pdf')
+        : t('done.saved.file'))
+    : '';
+  const savedNotice = realRun && !consent && (
+    <p className={savedText ? s.saved : s.srOnly} role="status">
+      {savedText && <CheckmarkCircle20Regular aria-hidden="true" />}
+      {savedText}
+    </p>
+  );
+
+  // Asked after the files are saved, the same way for everyone.
+  const feedback = realRun && downloaded && !consent && <FeedbackAsk runKey={generatedFiles} />;
+
+  const sampleNext = isSampleData && count > 0 && !consent && (
+    <div className={s.sampleNext}>
+      <p className={s.sampleText}>{t('done.sample.text')}</p>
+      <button type="button" className={s.btnPrimary} onClick={useOwnFiles}>{t('done.sample.cta')}</button>
+    </div>
+  );
+
+  // A sample run has its own next step ("Use my files" above); "Next time"
+  // would only repeat it (review b, finding 25).
+  const nextTime = !consent && count > 0 && !isSampleData && (
+    <section className={s.nextTime} aria-labelledby="done-next-time">
+      <h2 id="done-next-time" className={s.nextTitle}>{t('done.next.title')}</h2>
+      {hasTemplate && !isSampleData && (
+        <p className={s.nextText}>
+          <button type="button" className={s.sourceLink} onClick={() => downloadTaggedTemplate('done')}>
+            {t('done.next.template')}
+          </button>{' '}{t('done.next.templateWhy')}
+          {hasSpreadsheet && (<>{' '}<button type="button" className={s.sourceLink} onClick={() => downloadUploadedSpreadsheet('done')}>{t('done.sourceFiles.xlsx')}</button></>)}
+        </p>
+      )}
+      {confirmDiscard ? (
+        <div className={s.confirm} role="alertdialog" aria-labelledby="done-confirm-text">
+          <p id="done-confirm-text" className={s.confirmText}>{confirmText}</p>
+          <div className={s.actions}>
+            <button type="button" className={s.btnDanger} onClick={() => (confirmDiscard === 'new' ? startNew() : startSameTemplate())}>
+              {tCount(count - savedCount, 'done.confirm.discard')}
+            </button>
+            <button type="button" className={s.btnGhost} onClick={keepThem} autoFocus>{t('done.confirm.keep')}</button>
+          </div>
+        </div>
+      ) : (
+        <div className={s.actions}>
+          {hasTemplate && !isSampleData && (
+            <button type="button" ref={sameBtnRef} className={s.btnGhost} onClick={() => requestStart('same')}>{t('done.next.same')}</button>
+          )}
+          <button type="button" ref={newBtnRef} className={s.btnGhost} onClick={() => requestStart('new')}>{t('done.next.new')}</button>
+        </div>
+      )}
+    </section>
+  );
+
+  const modal = (
+    <DownloadCompleteModal open={modalOpen} onClose={closeModal} onCheckoutOpened={closeModalAfterCheckout}
+      source={modalSource} count={count} savedCount={savedCount} runKey={generatedFiles} />
+  );
+
+  const header = (
+    <>
+      <div className={s.successIcon}>
+        <Checkmark28Regular />
+      </div>
+      <h1 className={s.title} data-done-heading tabIndex={-1}>{tCount(count, 'done.title')}</h1>
+      {(!realRun || protect) && (
+        <div className={s.subtitle}>{realRun ? t('done.subtitle.notYet') : t('done.subtitle')}</div>
+      )}
+    </>
+  );
+
+  // Order after the first download: saved notice, the donation ask (one line
+  // or, in the inline variant, the card), the feedback question, then the
+  // download area and the reuse section. Before it: the download area first,
+  // the donation card under the files, the reuse section last.
+  const top = (
+    <>
+      {savedNotice}
+      {sampleNext}
+      {donorThanks}
+      {quietLine}
+      {(cardTop || (cardExpanded && downloaded)) && donateCard}
+      {feedback}
+    </>
+  );
+  const bottomAsk = (cardBelow || (cardExpanded && !downloaded)) && donateCard;
+
   if (pdfOn) {
-    // Only the idle entry shows the Word "documents ready" framing; every other
-    // PDF phase (sending/queued/converting/done/busy/unreachable/canceled/failed)
-    // owns its own heading or pill.
     const showFraming = pdfPhase === 'idle';
     return (
       <div className={mergeClasses(s.root, s.rootScroll)}>
         <div className={s.content}>
-          {showFraming && (
-            <>
-              <div className={s.successIcon}>
-                <Checkmark28Regular />
-              </div>
-              <div className={s.title}>{tCount(generatedFiles.length, 'done.title')}</div>
-              <div className={s.subtitle}>{t('done.subtitle')}</div>
-            </>
-          )}
+          {showFraming && header}
+          {top}
           <PdfFlow files={generatedFiles} baseName={baseName}
             onDownloadWord={() => void handleWordDownload()} onAfterDownload={handlePdfAfterDownload}
             onDownloadFile={handleFileDownloadByStem} onAfterFileDownload={noteSingleDownload} />
-          {reviewLine}
-          {sourceFiles}
-          {/* The consent gate shows only its two decision buttons (Convert / Keep
-              Word files); Start Over and the donate card are hidden there so the
-              choice stays focused. The donate card sits below the downloads on
-              every other phase of this real (non-demo) completion. */}
-          {showAsk && <DonateInline count={generatedFiles.length} runKey={generatedFiles} surface="inline" />}
-          {pdfPhase !== 'consent' && (
-            <button type="button" className={s.btnGhost} onClick={handleStartOver}>
-              {t('done.startOver')}
-            </button>
-          )}
-          {/* The full review card sits below the donation card until seen once
-              and follows its real-run rule, so it is hidden on the consent
-              gate and on sample runs. */}
-          {reviewCard}
+          {bottomAsk}
+          {nextTime}
         </div>
-        <DownloadCompleteModal open={downloadModalOpen} onClose={() => setDownloadModalOpen(false)}
-          source={downloadModalSource} count={generatedFiles.length} runKey={generatedFiles} />
+        {modal}
       </div>
     );
   }
 
   return (
-    <div className={s.root}>
-      <div className={s.successIcon}>
-        <Checkmark28Regular />
+    <div className={mergeClasses(s.root, s.rootScroll)}>
+      <div className={s.content}>
+        {header}
+        {top}
+        <FileList files={generatedFiles} onDownloadFile={handleFileDownload} />
+        <div className={s.actions}>
+          <button type="button" className={s.btnPrimary} onClick={() => void handleWordDownload()}>
+            {t('done.downloadAll')}
+          </button>
+        </div>
+        {bottomAsk}
+        {nextTime}
       </div>
-      <div className={s.title}>
-        {tCount(generatedFiles.length, 'done.title')}
-      </div>
-      <div className={s.subtitle}>{t('done.subtitle')}</div>
-      <FileList files={generatedFiles} onDownloadFile={handleFileDownload} />
-      <div className={s.actions}>
-        <button type="button" className={s.btnPrimary} onClick={() => void handleWordDownload()}>
-          {t('done.downloadAll')}
-        </button>
-        <button type="button" className={s.btnGhost} onClick={handleStartOver}>
-          {t('done.startOver')}
-        </button>
-      </div>
-      {reviewLine}
-      {sourceFiles}
-      {showAsk && <DonateInline count={generatedFiles.length} runKey={generatedFiles} surface="inline" />}
-      {reviewCard}
-      <DownloadCompleteModal open={downloadModalOpen} onClose={() => setDownloadModalOpen(false)}
-        source={downloadModalSource} count={generatedFiles.length} runKey={generatedFiles} />
+      {modal}
     </div>
   );
 }

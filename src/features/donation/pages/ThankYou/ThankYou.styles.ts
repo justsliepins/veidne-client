@@ -64,4 +64,5 @@ export const useThankYouStyles = makeStyles({
     ...veidneTypography.bodyRegular, fontWeight: 600, color: '#46529E', textDecorationLine: 'none',
     ':hover': { textDecorationLine: 'underline' },
   },
+  privacyNote: { fontSize: '13px', lineHeight: '20px', fontWeight: 400, color: tokens.colorNeutralForeground2 },
 });

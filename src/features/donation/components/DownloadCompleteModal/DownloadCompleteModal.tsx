@@ -1,85 +1,99 @@
-import { useEffect } from 'react';
-import { Dismiss24Regular } from '@fluentui/react-icons';
+import { useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
+import { Dismiss24Regular, CheckmarkCircle20Regular } from '@fluentui/react-icons';
 import { t } from '@/i18n/i18n';
+import { tCount } from '@/i18n/plural';
 import { trackEvent } from '@/services/analyticsService';
-import { TRUSTPILOT_REVIEW_URL } from '@/config/constants';
 import { DonateInline } from '../DonateInline';
 import { useStyles } from './DownloadCompleteModal.styles';
 
-// The review link opens in a new tab so the just-saved download and this
-// surface stay put.
+export type DismissMethod = 'no_thanks' | 'close' | 'escape' | 'backdrop';
 
 interface DownloadCompleteModalProps {
   open: boolean;
-  onClose: () => void;
+  onClose: (method: DismissMethod) => void;
   /** Where the modal was triggered from, e.g. 'word' or 'pdf'; sent with download_modal_shown. */
   source: string;
   /** Documents produced by the run just downloaded; named in the donate card. */
   count: number;
+  /** Documents actually downloaded so far (all of them after the zip or the
+   *  PDFs, otherwise the single files); named in the first line. */
+  savedCount: number;
+  /** Checkout opened in a new tab from the card: the dialog closes without a
+   *  dismissal. */
+  onCheckoutOpened?: () => void;
   /** Stable identity of the run (the generated files array); see DonateInline. */
   runKey: object;
 }
 
-// Opens after a download has been saved, never before it. The donation ask is
-// the primary content, rendered by the same DonateInline card as the Done
-// screen (same copy, amounts and Stripe line) with surface 'modal'; the review
-// ask is a single secondary line. DoneView decides when it opens (real runs
-// only; every bulk or PDF download, a 10 percent chance per single file) and
-// hides the inline card for the run once this has shown, so only one ask is
-// on screen at a time.
-export function DownloadCompleteModal({ open, onClose, source, count, runKey }: DownloadCompleteModalProps) {
+// The one donation dialog of a run (audit nov 2026). It opens after the first
+// download has been saved, never before, at most once per run, and not for a
+// while after "No thanks" or after a donation (DoneView decides). It says
+// first that the files are saved, so it cannot read as a step the download
+// waits on, and declining is a button of the same size as donating. It asks
+// for money only: the review ask stays on the Done screen, not in this dialog.
+//
+// Focus: moved to the title on open, kept inside while open, returned to the
+// control that had it on close. The page behind is made inert, which is what
+// aria-modal claims.
+export function DownloadCompleteModal({ open, onClose, source, count, savedCount, onCheckoutOpened, runKey }: DownloadCompleteModalProps) {
   const s = useStyles();
+  const cardRef = useRef<HTMLDivElement>(null);
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  const returnTo = useRef<HTMLElement | null>(null);
 
-  // Escape-to-close, copied from DonationModal.
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-    document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
-  }, [open, onClose]);
-
-  // Fire once each time the modal opens. The review line below is on screen
-  // whenever the modal is, so its impression is counted here too.
   useEffect(() => {
     if (!open) return;
     trackEvent('download_modal_shown', { source });
-    trackEvent('review_ask_shown', { variant: 'modal' });
-  }, [open, source]);
+    returnTo.current = document.activeElement as HTMLElement | null;
+    const app = document.getElementById('root');
+    app?.setAttribute('inert', '');
+    requestAnimationFrame(() => titleRef.current?.focus());
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { e.preventDefault(); onClose('escape'); return; }
+      if (e.key !== 'Tab' || !cardRef.current) return;
+      const items = cardRef.current.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), a[href], input:not([disabled]):not([tabindex="-1"]), [tabindex="0"]');
+      if (items.length === 0) return;
+      const first = items[0]; const last = items[items.length - 1];
+      if (e.shiftKey && (document.activeElement === first || document.activeElement === titleRef.current)) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      app?.removeAttribute('inert');
+      // The trigger may be gone (PDF flow re-renders); fall back to the page heading.
+      const back = returnTo.current;
+      if (back && document.contains(back)) back.focus();
+      else document.querySelector<HTMLElement>('[data-done-heading]')?.focus();
+    };
+  }, [open, source, onClose]);
 
   if (!open) return null;
 
-  const handleBackdrop = (e: React.MouseEvent) => { if (e.target === e.currentTarget) onClose(); };
+  const handleBackdrop = (e: React.MouseEvent) => { if (e.target === e.currentTarget) onClose('backdrop'); };
 
-  return (
+  return createPortal(
     <div className={s.overlay} onClick={handleBackdrop}>
-      <div className={s.card} role="dialog" aria-modal="true" aria-labelledby="download-modal-title">
+      <div ref={cardRef} className={s.card} role="dialog" aria-modal="true" aria-labelledby="download-modal-title">
         <div className={s.titleRow}>
-          <div id="download-modal-title" className={s.title}>{t('downloadModal.title')}</div>
-          <button type="button" className={s.closeBtn} onClick={onClose} aria-label={t('common.close')}>
+          <div>
+            <p className={s.saved}><CheckmarkCircle20Regular aria-hidden="true" />{tCount(savedCount, 'downloadModal.saved')}</p>
+            <h2 id="download-modal-title" ref={titleRef} tabIndex={-1} className={s.title}>{t('downloadModal.title')}</h2>
+          </div>
+          <button type="button" className={s.closeBtn} onClick={() => onClose('close')} aria-label={t('common.close')}>
             <Dismiss24Regular />
           </button>
         </div>
 
-        <DonateInline count={count} runKey={runKey} surface="modal" />
+        <DonateInline count={count} runKey={runKey} surface="modal" onCheckoutOpened={onCheckoutOpened} />
 
-        {/* Review: secondary, one line, same wording as the condensed ReviewAsk. */}
-        <div className={s.reviewRow}>
-          {t('review.ask.condensed')}{' '}
-          <a
-            className={s.reviewLink}
-            href={TRUSTPILOT_REVIEW_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={() => trackEvent('review_trustpilot_clicked', { source: 'download_modal' })}
-          >
-            {t('review.ask.condensedCta')}
-          </a>
-        </div>
-
-        <button type="button" className={s.dismiss} onClick={onClose}>
+        <button type="button" className={s.dismiss} onClick={() => onClose('no_thanks')}>
           {t('downloadModal.dismiss')}
         </button>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

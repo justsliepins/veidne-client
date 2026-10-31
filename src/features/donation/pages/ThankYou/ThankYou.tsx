@@ -6,6 +6,7 @@ import { useTranslation } from '@/i18n/useTranslation';
 import { trackEvent } from '@/services/analyticsService';
 import { getDonationSession, type DonationSession } from '@/services/donationService';
 import { submitSuggestion } from '@/services/suggestionService';
+import { cameFromDoneTab, forgetDonateFromDone, rememberDonation } from '../../utils/askMemory';
 import { useThankYouStyles } from './ThankYou.styles';
 import { useEditorStore } from '@/features/editor/store/editorStore';
 import { useDataStore } from '@/features/data/store/dataStore';
@@ -56,6 +57,15 @@ export function ThankYou() {
     return () => clearTimeout(id);
   }, [sessionId, session, attempts]);
 
+  // Remember the donation in this browser, so the Done screen thanks instead
+  // of asking for a while. Local only, never sent.
+  useEffect(() => { if (session?.status === 'Completed') rememberDonation(); }, [session?.status]);
+  // Only true when checkout was opened in a new tab from a Done screen.
+  // Read once, then forgotten, so a later donation from About in the same
+  // browser does not mention another tab (review b, finding 23).
+  const [fromDoneTab] = useState(cameFromDoneTab);
+  useEffect(() => { forgetDonateFromDone(); }, []);
+
   const [suggestion, setSuggestion] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -103,6 +113,8 @@ export function ThankYou() {
                     maxLength={DESCRIPTION_MAX} disabled={submitting}
                     onChange={(e) => { setSuggestion(e.target.value); setError(''); }} />
                 </div>
+                {/* What is sent, said where it is sent (journey audit 4a, Obligāti 4). */}
+                <p className={s.privacyNote}>{t('thankyou.suggestPrivacy')}</p>
                 <button type="button" className={s.cta} disabled={submitting || suggestion.trim().length === 0}
                   onClick={() => void handleSubmit()}>
                   {t('suggestion.modal.submit')}
@@ -114,7 +126,7 @@ export function ThankYou() {
         )}
 
         <div className={s.onward}>
-          <p className={s.otherTab}>{t('thankyou.otherTab')}</p>
+          {fromDoneTab && <p className={s.otherTab}>{t('thankyou.otherTab')}</p>}
           {/* A fresh merge: the stores are reset first so the upload step
               never shows the previous run (the popup-blocked fallback lands
               here in the same tab). A saved, unfinished project still gets

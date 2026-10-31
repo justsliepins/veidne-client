@@ -34,9 +34,9 @@ test('gate: no remembered consent shows the gate, fires zero batch requests, foc
   await expect(page.getByTestId('pdf-consent-decline')).toHaveText('Keep Word files');
   await expect(page.getByTestId('pdf-consent-remember')).not.toBeChecked(); // unchecked by default
 
-  // Start Over is hidden on the consent gate: only the two decision buttons show
+  // Start a new merge is hidden on the consent gate: only the two decision buttons show
   // (the donate card and review ask are hidden there too).
-  await expect(page.getByRole('button', { name: 'Start Over' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Start a new merge' })).toHaveCount(0);
 
   // Focus lands on the consent heading on mount.
   await expect
@@ -72,7 +72,7 @@ test('decline: Keep Word files returns to the finished screen with no request, a
   // Finished screen intact: Word download and the Create PDFs entry are present.
   await expect(page.getByRole('button', { name: 'Download Word files' })).toBeVisible();
   await expect(page.getByTestId('pdf-create')).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Start Over' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Start a new merge' })).toBeVisible();
   expect(batchPosts()).toBe(0);
 
   // No decision was recorded: nothing in storage, and the gate shows again.

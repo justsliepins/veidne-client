@@ -29,6 +29,7 @@ export const useStyles = makeStyles({
     boxShadow: '0 6px 14px -6px rgba(62, 201, 138, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.75)',
   },
   title: {
+    margin: '0', outlineStyle: 'none',
     fontSize: '32px', lineHeight: '40px', fontWeight: 600, letterSpacing: '-0.02em',
     color: '#1A1622', textAlign: 'center',
     [media.below.md]: { fontSize: '26px', lineHeight: '34px' },
@@ -125,6 +126,58 @@ export const useStyles = makeStyles({
     ':hover': { ...shorthands.borderColor('#1A1622') },
     ':focus-visible': { outlineColor: '#5566C4', outlineWidth: '2px', outlineStyle: 'solid', outlineOffset: '2px' },
     '@media (prefers-reduced-motion: reduce)': { transitionProperty: 'none' },
+    [media.below.sm]: { width: '100%' },
+  },
+  // The saved notice before anything is saved: in the page for screen readers
+  // (an empty live region), out of the layout and its gaps.
+  srOnly: {
+    position: 'absolute', width: '1px', height: '1px',
+    ...shorthands.padding('0'), ...shorthands.margin('-1px'),
+    overflowX: 'hidden', overflowY: 'hidden',
+    clipPath: 'inset(50%)', whiteSpace: 'nowrap', ...shorthands.borderStyle('none'),
+  },
+  // Confirms what the download produced, in place of a dialog title doing it.
+  saved: {
+    '& svg': { flexShrink: 0 },
+    display: 'flex', alignItems: 'center', gap: '8px', margin: '-12px 0 0',
+    fontSize: '15px', lineHeight: '22px', fontWeight: 500, color: '#166534', textAlign: 'center',
+  },
+  // One calm line for the donation ask after the dialog, or for donors.
+  quietAsk: {
+    display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: '8px 12px',
+    fontSize: '14px', lineHeight: '20px', color: '#3F3A46', textAlign: 'center', maxWidth: '520px',
+  },
+  quietBtn: {
+    minHeight: '36px', ...shorthands.padding('0', '14px'),
+    backgroundColor: '#FFFFFF', ...shorthands.borderStyle('solid'), ...shorthands.borderWidth('1px'), ...shorthands.borderColor('#5566C4'),
+    borderRadius: '10px', fontSize: '14px', fontWeight: 600, color: '#46529E', cursor: 'pointer',
+    ':hover': { backgroundColor: 'rgba(85, 102, 196, 0.08)' },
+    ':focus-visible': { outlineWidth: '2px', outlineStyle: 'solid', outlineColor: '#5566C4', outlineOffset: '2px' },
+  },
+  sampleNext: {
+    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px',
+    width: '100%', maxWidth: '520px', boxSizing: 'border-box', ...shorthands.padding('20px'),
+    backgroundColor: '#F4F5FC', borderRadius: '14px',
+  },
+  sampleText: { margin: '0', fontSize: '15px', lineHeight: '22px', color: '#3F3A46', textAlign: 'center' },
+  // "Next time": the reusable template and the two ways to start again.
+  nextTime: {
+    width: '100%', maxWidth: '520px', boxSizing: 'border-box',
+    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px',
+    ...shorthands.borderTop('1px', 'solid', 'rgba(26, 22, 34, 0.10)'), paddingTop: '24px',
+  },
+  nextTitle: { margin: '0', fontSize: '16px', lineHeight: '22px', fontWeight: 600, color: '#1A1622' },
+  nextText: { margin: '0', fontSize: '14px', lineHeight: '21px', color: '#5E5560', textAlign: 'center' },
+  confirm: {
+    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px',
+    ...shorthands.padding('16px'), borderRadius: '12px', backgroundColor: '#FEF2F2', width: '100%', boxSizing: 'border-box',
+  },
+  confirmText: { margin: '0', fontSize: '14px', lineHeight: '21px', color: '#7F1D1D', textAlign: 'center', fontWeight: 500 },
+  btnDanger: {
+    padding: '0 20px', height: '44px', backgroundColor: '#B91C1C', ...shorthands.borderStyle('none'), borderRadius: '11px',
+    fontSize: '14px', fontWeight: 600, color: '#FFFFFF', cursor: 'pointer',
+    ':hover': { backgroundColor: '#991B1B' },
+    ':focus-visible': { outlineColor: '#5566C4', outlineWidth: '2px', outlineStyle: 'solid', outlineOffset: '2px' },
     [media.below.sm]: { width: '100%' },
   },
 });

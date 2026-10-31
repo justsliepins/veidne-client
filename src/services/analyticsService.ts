@@ -30,7 +30,11 @@ export type AnalyticsEvent =
   | 'review_line_clicked'
   | 'download_modal_shown'
   | 'donation_ask_shown'
-  | 'review_ask_shown';
+  | 'review_ask_shown'
+  | 'feedback_answered'
+  | 'feedback_reason'
+  | 'donation_ask_dismissed'
+  | 'start_over';
 
 export function trackEvent(event: AnalyticsEvent, data?: Record<string, unknown>): void {
   fetch(`${API_BASE_URL}/analytics`, {

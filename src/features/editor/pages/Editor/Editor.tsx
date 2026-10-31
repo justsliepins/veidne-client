@@ -18,6 +18,7 @@ import { useEditorStore } from '../../store/editorStore';
 import { useDataStore, type EditorPhase, type DataSubState } from '@/features/data/store/dataStore';
 import { useGeneratorStore } from '@/features/generator/store/generatorStore';
 import { useDemoStore } from '@/features/demo/store/demoStore';
+import { useDoneGuard } from '@/features/generator/store/doneGuard';
 import { loadInstantPreview } from '@/features/demo/utils/instantPreview';
 import { CoachingStrip } from '@/features/demo/components/CoachingStrip';
 import { SampleDataBanner } from '../../components/SampleDataBanner';
@@ -80,10 +81,16 @@ export function Editor() {
   const regional = isSampleData ? NO_REGIONAL : regionalColumns;
   const hasUnsavedWork = editorPhase !== 'upload' && editorPhase !== 'done';
   useBeforeUnload(hasUnsavedWork);
-  const blocker = useBlocker(hasUnsavedWork);
+  // On the Done screen the question comes from DoneView: it is set while a
+  // real run has documents that were never downloaded, and read when the
+  // navigation happens, so the screen's own "Discard" paths (which clear it
+  // first) are not asked twice (review b, finding 1).
+  const shouldBlock = useCallback(() => hasUnsavedWork || useDoneGuard.getState().message !== null, [hasUnsavedWork]);
+  const blocker = useBlocker(shouldBlock);
   useEffect(() => {
     if (blocker.state === 'blocked') {
-      if (window.confirm(t('editor.unsavedWarning'))) blocker.proceed();
+      const doneMessage = useDoneGuard.getState().message;
+      if (window.confirm(doneMessage ?? t('editor.unsavedWarning'))) blocker.proceed();
       else blocker.reset();
     }
   }, [blocker]);
@@ -134,6 +141,11 @@ export function Editor() {
   // step switches to the data-first path the old start matrix offered.
   const [flow, setFlow] = useState(() => searchParams.get('flow') ?? 'template-data');
   const instantOpenedRef = useRef(false);
+  // "Upload My Document" in the demo hands over to the person's own file: the
+  // upload step of the normal flow, saved from then on. Without the flow
+  // change the upload step would keep showing the demo's spinner (review b,
+  // finding 3).
+  const handleUploadMyDocument = useCallback(() => { uploadMyDocument(); setFlow('template-data'); }, [uploadMyDocument]);
   const [resumeSession, setResumeSession] = useState<SavedSession | null>(() => {
     const f = searchParams.get('flow');
     if (f) return null;
@@ -360,7 +372,7 @@ export function Editor() {
     if (!ds.isSampleData) bumpGeneratedTotal(count);
   }, [generate, placeholders, rows, columnMapping, rawDocxBytes, fileName]);
   const coaching = demoActive ? <CoachingStrip demoStep={demoStep} onSkip={skipDemo}
-    onLoadData={loadSampleData} onUploadMyDocument={uploadMyDocument} onExploreMore={exploreMore} /> : null;
+    onLoadData={loadSampleData} onUploadMyDocument={handleUploadMyDocument} onExploreMore={exploreMore} /> : null;
   // Persistent instruction line on the Fields step (not in the demo, which has
   // its own coaching). It stays until dismissed or the first manual field.
   const showFieldNudge = !demoActive && editorPhase === 'placeholders' && !fieldNudgeSeen;

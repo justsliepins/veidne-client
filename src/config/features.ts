@@ -23,4 +23,13 @@ export const features = {
   conditionalLogic: false,
   userAccounts: false,
   templateMarketplace: false,
+
+  // Experiments (the "test first" items of the November 2026 audits). Each is off
+  // unless the build sets its variable to 'true'. Production builds set none of
+  // them (the Dockerfile passes only VITE_CONVERT_API_URL and VITE_IMAGE_FIELDS),
+  // so production always runs the default. With every flag off, the prerendered
+  // HTML is identical to a build without these lines.
+  // Done screen, variant B: no dialog after the first download; the donation
+  // card moves up under the saved notice instead.
+  expAskInline: import.meta.env.VITE_EXP_ASK_INLINE === 'true',
 } as const;

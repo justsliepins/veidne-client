@@ -29,37 +29,34 @@ export const useStyles = makeStyles({
     [media.below.md]: { width: 'min(560px, 95vw)', marginTop: 'auto', marginBottom: 'auto' },
     [media.below.sm]: { width: '95vw', ...shorthands.padding('16px', '12px'), gap: '12px' },
   },
-  titleRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
+  titleRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' },
   title: {
+    margin: '0', outlineStyle: 'none',
     fontSize: '24px', lineHeight: '32px', fontWeight: 600, letterSpacing: '-0.01em', color: '#1A1622',
     [media.below.sm]: { fontSize: '20px', lineHeight: '28px' },
   },
   closeBtn: {
     ...shorthands.borderStyle('none'), backgroundColor: 'transparent',
     cursor: 'pointer', color: '#5E5560', fontSize: '24px',
-    display: 'flex', alignItems: 'center', padding: '0',
+    display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0',
+    width: '44px', height: '44px', marginRight: '-10px', marginTop: '-6px', borderRadius: '10px',
     ':focus-visible': { outlineWidth: '2px', outlineStyle: 'solid', outlineColor: '#5566C4', outlineOffset: '2px' },
   },
 
-  // Review: one quiet line under the donate card, same tone as ReviewAsk's
-  // condensed row.
-  reviewRow: {
-    fontSize: '13px', lineHeight: '20px', fontWeight: 400, color: '#767077',
-    textAlign: 'center',
+  saved: {
+    '& svg': { flexShrink: 0 },
+    display: 'flex', alignItems: 'center', gap: '6px', margin: '0 0 4px',
+    fontSize: '14px', lineHeight: '20px', fontWeight: 500, color: '#166534',
   },
-  reviewLink: {
-    color: '#5566C4', fontWeight: 500, textDecorationLine: 'underline', whiteSpace: 'nowrap',
-    ':hover': { color: '#46529E' },
-    ':focus-visible': { outlineWidth: '2px', outlineStyle: 'solid', outlineColor: '#5566C4', outlineOffset: '2px' },
-  },
-
-  // Plain text dismiss at the bottom.
+  // Declining has the same size and weight class as the Donate button above
+  // (CTA-23): a full-width secondary button, not small grey text.
   dismiss: {
-    alignSelf: 'center',
-    fontSize: '13px', lineHeight: '20px', fontWeight: 400, color: '#767077',
-    backgroundColor: 'transparent', ...shorthands.borderStyle('none'), cursor: 'pointer',
-    textDecorationLine: 'none',
-    ':hover': { textDecorationLine: 'underline', color: '#5E5560' },
+    alignSelf: 'stretch', minHeight: '48px',
+    backgroundColor: '#FFFFFF',
+    ...shorthands.borderStyle('solid'), ...shorthands.borderWidth('1px'), ...shorthands.borderColor('rgba(26, 22, 34, 0.18)'),
+    borderRadius: '11px',
+    fontSize: '15px', fontWeight: 600, color: '#1A1622', cursor: 'pointer',
+    ':hover': { ...shorthands.borderColor('#1A1622') },
     ':focus-visible': { outlineColor: '#5566C4', outlineWidth: '2px', outlineStyle: 'solid', outlineOffset: '2px' },
   },
 });
