@@ -361,6 +361,11 @@ export function Editor() {
       : t(placeholders.length === 1 ? 'placeholder.instruct.foundOne' : 'placeholder.instruct.found', { count: String(placeholders.length) }),
     features.imagePlaceholders ? t('placeholder.instruct.pictures') : null,
   ].filter(Boolean).join(' ');
+  // Fields that no spreadsheet column fills come out blank in every document.
+  // Image fields are matched by picture name, not by column, so they are left out.
+  const mappedFieldNames = new Set(Object.values(columnMapping));
+  const emptyFieldNames = placeholders.filter((p) => p.type !== 'image' && !mappedFieldNames.has(p.name)).map((p) => p.name);
+  const filledFieldCount = placeholders.length - emptyFieldNames.length;
   const isPreview = editorPhase === 'preview';
   const isDone = editorPhase === 'done';
   const isGenerating = editorPhase === 'generating';
@@ -456,7 +461,8 @@ export function Editor() {
               {coaching}
               {isSampleData && <SampleDataBanner onUseMyFiles={handleUseMyFiles} />}
               <DataLoadedInfoBar beat={dataTransitionBeat} rowCount={rows.length}
-                fieldCount={placeholders.length} onDismiss={dismissInfoBar} />
+                fieldCount={filledFieldCount} onDismiss={dismissInfoBar}
+                emptyFields={isSampleData ? [] : emptyFieldNames} onChooseColumns={matchResult ? () => setPhase('mapping') : undefined} />
               <DocumentArea previewMode getFilledValue={getFilledValue} transitionBeat={dataTransitionBeat} />
             </div>
             <PreviewPanel onBackToPlaceholders={() => setPhase('placeholders')}

@@ -10,14 +10,16 @@ interface MappingRowProps {
   previewValue: string;
   isMatched: boolean;
   readOnly?: boolean;
+  /** Matched only because one name contains the other: ask the user to check. */
+  guessed?: boolean;
   onChange: (placeholder: string) => void;
 }
 
-export function MappingRow({ column, selectedPlaceholder, availablePlaceholders, previewValue, isMatched, readOnly, onChange }: MappingRowProps) {
+export function MappingRow({ column, selectedPlaceholder, availablePlaceholders, previewValue, isMatched, readOnly, guessed, onChange }: MappingRowProps) {
   const s = useStyles();
   return (
     <div className={s.row}>
-      {isMatched
+      {isMatched && !guessed
         ? <CheckmarkCircle16Regular className={s.iconMatched} />
         : <Warning16Regular className={s.iconUnmatched} />}
       <span className={s.colName} title={column}>{column}</span>
@@ -32,6 +34,7 @@ export function MappingRow({ column, selectedPlaceholder, availablePlaceholders,
             {availablePlaceholders.map(ph => <Option key={ph} value={ph}>{ph}</Option>)}
           </Dropdown>
           {!selectedPlaceholder && <span className={s.skipHint}>{t('data.mapping.willSkip')}</span>}
+          {selectedPlaceholder && guessed && <span className={s.skipHint}>{t('data.mapping.guessed')}</span>}
         </div>
       )}
       {!readOnly && <span className={s.preview}>{previewValue}</span>}

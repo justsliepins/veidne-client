@@ -69,12 +69,14 @@ export const useStyles = makeStyles({
   },
   dropdownCol: {
     display: 'flex', flexDirection: 'column', gap: '3px',
-    width: '160px',
+    width: '200px', flexShrink: 0,
     [media.below.md]: { width: 'auto', flexGrow: 1 },
     [media.below.sm]: { width: '100%' },
   },
+  // Fluent's Dropdown has a 250px minimum width; inside a 200px column it
+  // overflowed into the preview column and was clipped at the dialog edge.
   dropdown: {
-    width: '100%', fontSize: '13px',
+    width: '100%', minWidth: '0', fontSize: '13px',
   },
   // Calm, muted explanation that an unmapped column is skipped. Clears on map.
   skipHint: {
@@ -82,21 +84,21 @@ export const useStyles = makeStyles({
   },
   preview: {
     fontSize: '13px', lineHeight: '20px', color: '#5E5560',
-    maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis',
+    width: '140px', flexShrink: 0, overflow: 'hidden', textOverflow: 'ellipsis',
     whiteSpace: 'nowrap' as const, marginLeft: '8px',
     [media.below.md]: { display: 'none' },
   },
   headerCol: { flexGrow: 1 },
   headerPlaceholder: {
-    width: '160px',
+    width: '200px',
     [media.below.md]: { flexGrow: 1, width: 'auto' },
   },
   headerPreview: {
-    width: '120px', marginLeft: '8px',
+    width: '140px', marginLeft: '8px',
     [media.below.md]: { display: 'none' },
   },
   staticPlaceholder: {
-    width: '160px', fontSize: '13px', color: '#1A1622', fontWeight: 500,
+    width: '200px', fontSize: '13px', color: '#1A1622', fontWeight: 500,
     [media.below.md]: { width: 'auto', flexGrow: 1 },
     [media.below.sm]: { width: '100%' },
   },

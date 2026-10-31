@@ -8,10 +8,29 @@ interface DataLoadedInfoBarProps {
   rowCount: number;
   fieldCount: number;
   onDismiss: () => void;
+  /** Fields no column fills. While any exist the bar stays up as a warning,
+   *  names them, and offers the way back to the column choice. */
+  emptyFields?: string[];
+  onChooseColumns?: () => void;
 }
 
-export function DataLoadedInfoBar({ beat, rowCount, fieldCount, onDismiss }: DataLoadedInfoBarProps) {
+export function DataLoadedInfoBar({ beat, rowCount, fieldCount, onDismiss, emptyFields = [], onChooseColumns }: DataLoadedInfoBarProps) {
   const s = useStyles();
+
+  // Warning variant: not dismissable, shown once the load transition is over.
+  if (emptyFields.length > 0 && rowCount > 0 && (beat === 0 || beat >= 4)) {
+    return (
+      <div className={mergeClasses(s.root, s.visible, s.warn)} role="status">
+        <span className={s.text}>
+          {tCount(emptyFields.length, 'data.empty.bar')}{' '}{emptyFields.join(', ')}
+          {' · '}{tCount(rowCount, 'data.empty.barRows')}
+        </span>
+        {onChooseColumns && (
+          <button type="button" className={s.gotIt} onClick={onChooseColumns}>{t('data.empty.choose')}</button>
+        )}
+      </div>
+    );
+  }
 
   if (beat === 0) return null;
 

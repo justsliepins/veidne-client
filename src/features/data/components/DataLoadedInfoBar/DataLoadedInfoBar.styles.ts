@@ -27,6 +27,9 @@ export const useStyles = makeStyles({
       gap: '8px',
     },
   },
+  warn: {
+    backgroundColor: '#FFFBEB', borderBottomColor: '#FCD34D', color: '#78350F',
+  },
   hidden: {
     opacity: 0,
     transform: 'translateY(-8px)',

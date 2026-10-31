@@ -105,11 +105,14 @@ export function PlaceholderPopover({ open, target, onConfirm, onClose, selection
           onChange={(_, data) => setName(data.value)}
           onKeyDown={handleKeyDown}
           placeholder={t('placeholder.popover.namePlaceholder')}
+          aria-label={t('placeholder.popover.nameLabel')}
+          aria-describedby="field-name-hint"
         />
         <button type="button" className={s.confirmBtn} onClick={handleConfirm} aria-label={t('a11y.confirmPlaceholder')}>
           <Checkmark16Regular />
         </button>
       </div>
+      <div id="field-name-hint" className={s.hint}>{t('placeholder.popover.nameHint')}</div>
       {!hintDismissed && selectionState === 'oneWord' && (
         <div className={s.hint}>{t('placeholder.popover.rangeHint')}</div>
       )}

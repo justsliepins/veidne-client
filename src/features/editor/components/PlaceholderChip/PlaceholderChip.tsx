@@ -45,7 +45,7 @@ export function PlaceholderChip({ placeholder, open, onOpenChange, onRename, onD
         title={placeholder.name}
         onClick={() => onOpenChange(!open)}
       >
-        <span className={s.name} style={{ color: color.border }}>
+        <span className={s.name} style={{ color: color.chipText }}>
           {placeholder.name}
         </span>
       </span>

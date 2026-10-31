@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef } from 'react';
 import { Dialog, DialogSurface, mergeClasses } from '@fluentui/react-components';
 import { t } from '@/i18n/i18n';
+import { tCount } from '@/i18n/plural';
 import { VeidneButton } from '@/shared/components/VeidneButton/VeidneButton';
 import type { FuzzyMatchResult } from '../../utils/fuzzyMatch';
 import { MappingRow } from './MappingRow';
@@ -32,6 +33,15 @@ export function ColumnMappingModal({ open, matchResult, rows, placeholderNames, 
   const matchedCols = matchResult.matched.map(m => m.column);
   const unmatchedCols = matchResult.unmatchedColumns;
   const usedPlaceholders = useMemo(() => new Set(Object.values(mapping)), [mapping]);
+  // Document fields that no column fills right now. They come out empty in
+  // every document, so the modal says so by name instead of only listing the
+  // columns it will skip (audit nov 2026, finding 1).
+  const emptyFields = placeholderNames.filter(ph => !usedPlaceholders.has(ph));
+  const confidenceByColumn = useMemo(() => {
+    const m: Record<string, string> = {};
+    for (const x of matchResult.matched) m[x.column] = x.confidence;
+    return m;
+  }, [matchResult]);
 
   const getAvailable = (currentCol: string) => {
     const current = mapping[currentCol];
@@ -57,6 +67,7 @@ export function ColumnMappingModal({ open, matchResult, rows, placeholderNames, 
     <MappingRow key={col} column={col} selectedPlaceholder={mapping[col] ?? ''}
       availablePlaceholders={getAvailable(col)} previewValue={preview[col] ?? ''}
       isMatched={matched} readOnly={!hasData}
+      guessed={matched && confidenceByColumn[col] === 'substring' && mapping[col] === matchResult.matched.find(m => m.column === col)?.placeholder}
       onChange={(ph) => handleChange(col, ph)} />
   ));
 
@@ -65,7 +76,16 @@ export function ColumnMappingModal({ open, matchResult, rows, placeholderNames, 
       <DialogSurface className={s.surface}>
         <div className={s.modalHeader}>
           <div className={s.title}>{t('data.mapping.title')}</div>
-          {!noFields && <div className={s.subtitle}>{t('data.mapping.subtitle')}</div>}
+          {!noFields && hasData && emptyFields.length > 0 ? (
+            <div className={s.noticeBanner} role="status">
+              <div className={s.noticeBold}>
+                {tCount(emptyFields.length, 'data.mapping.empty.title')}{' '}{emptyFields.join(', ')}
+              </div>
+              <div className={s.noticeText}>
+                {t('data.mapping.empty.text', { rows: tCount(rows.length, 'count.documents') })}
+              </div>
+            </div>
+          ) : !noFields && <div className={s.subtitle}>{t('data.mapping.subtitle')}</div>}
           {noFields && (
             <div className={s.noticeBanner}>
               <div className={s.noticeBold}>{t('data.mapping.noFields.title')}</div>
@@ -107,7 +127,9 @@ export function ColumnMappingModal({ open, matchResult, rows, placeholderNames, 
           ) : hasData ? (
             <>
               <VeidneButton appearance="secondary" size="small" onClick={onCancel}>{t('data.mapping.cancel')}</VeidneButton>
-              <VeidneButton appearance="primary" size="small" onClick={handleApply}>{t('data.mapping.apply')}</VeidneButton>
+              <VeidneButton appearance="primary" size="small" onClick={handleApply}>
+                {emptyFields.length > 0 ? tCount(emptyFields.length, 'data.mapping.applyWithEmpty') : t('data.mapping.apply')}
+              </VeidneButton>
             </>
           ) : (
             <>
