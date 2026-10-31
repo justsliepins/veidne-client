@@ -4,7 +4,6 @@ import { media } from '@/design-system/responsive';
 // Brandbook colors (literals so the hero hits the exact visual target).
 const INK = '#1A1622';
 const MUTED = '#5E5560';
-const FAINT = '#767077';
 const PERI = '#5566C4'; // action fill / accent
 const PERI_SOFT = 'rgba(85,102,196,.14)'; // soft tint (product chips)
 const PERI_TEXT = '#46529E';
@@ -141,7 +140,7 @@ export const useHeroSectionStyles = makeStyles({
     '& > *:nth-child(3)': { animationDelay: '0.25s' },
     '& > *:nth-child(4)': { animationDelay: '0.35s' },
     '& > *:nth-child(5)': { animationDelay: '0.45s' },
-    '& > *:nth-child(6)': { animationDelay: '0.55s' },
+    '& > *:nth-child(n+6)': { animationDelay: '0.55s' },
     // Reduced motion: show the final state immediately, no entrance.
     '@media (prefers-reduced-motion: reduce)': {
       '& > *': { opacity: 1, transform: 'none', animationName: 'none' },
@@ -216,10 +215,16 @@ export const useHeroSectionStyles = makeStyles({
   },
   previewCaption: {
     margin: 0,
-    fontSize: '13px',
-    fontWeight: 500,
-    color: MUTED,
+    fontSize: '14px',
+    fontWeight: 600,
+    color: PERI_TEXT,
     textAlign: 'center',
+    textDecorationLine: 'underline',
+    textUnderlineOffset: '3px',
+    minHeight: '44px',
+    display: 'inline-flex',
+    alignItems: 'center',
+    ':focus-visible': { outline: `2px solid ${PERI}`, outlineOffset: '2px', borderRadius: '6px' },
   },
   glass: {
     width: '100%',
@@ -251,7 +256,7 @@ export const useHeroSectionStyles = makeStyles({
   demoDot: { width: '11px', height: '11px', borderRadius: '50%' },
   demoBody: {
     display: 'grid',
-    gridTemplateColumns: '1.5fr 1fr',
+    gridTemplateColumns: '1fr 1.2fr',
     [media.below.sm]: { gridTemplateColumns: '1fr' },
   },
   demoDoc: { padding: '16px', borderRight: '1px solid rgba(255,255,255,.5)' },
@@ -285,7 +290,7 @@ export const useHeroSectionStyles = makeStyles({
     fontWeight: 700,
     letterSpacing: '.08em',
     textTransform: 'uppercase',
-    color: FAINT,
+    color: MUTED,
     marginBottom: '12px',
   },
   field: {
@@ -320,4 +325,39 @@ export const useHeroSectionStyles = makeStyles({
   },
   // Inactive until every field is mapped, then it "activates".
   genInactive: { opacity: 0.38, transform: 'scale(.99)' },
+  // Privacy promise with its one exception, right under the subtitle.
+  privacy: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    gap: '12px',
+    padding: '14px 16px',
+    borderRadius: '14px',
+    backgroundColor: 'rgba(255,255,255,.72)',
+    border: `1px solid ${N_BORDER}`,
+    maxWidth: '520px',
+  },
+  privacyIcon: { fontSize: '22px', color: PERI_TEXT, flexShrink: 0, marginTop: '1px' },
+  privacyText: { margin: 0, fontSize: '14px', lineHeight: 1.55, color: MUTED },
+  privacyStrong: { color: INK, fontWeight: 600 },
+  privacyLink: { color: PERI_TEXT, fontWeight: 600, textUnderlineOffset: '2px' },
+
+  // Static example: spreadsheet and resulting files.
+  exTable: {
+    width: '100%',
+    borderCollapse: 'collapse',
+    fontSize: '11.5px',
+    color: INK,
+    '& th': { textAlign: 'left', fontWeight: 600, color: MUTED, fontSize: '10px', letterSpacing: '.04em', textTransform: 'uppercase', padding: '4px 4px 6px 0' },
+    '& td': { padding: '5px 4px 5px 0', borderTop: '1px solid rgba(26,22,34,.07)', whiteSpace: 'nowrap' },
+  },
+  exMore: { color: MUTED },
+  files: { display: 'flex', flexWrap: 'wrap', gap: '6px' },
+  file: {
+    fontSize: '11px',
+    fontWeight: 600,
+    padding: '3px 8px',
+    borderRadius: '6px',
+    backgroundColor: PERI_SOFT,
+    color: PERI_TEXT,
+  },
 });

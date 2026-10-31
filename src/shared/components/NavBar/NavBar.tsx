@@ -2,7 +2,6 @@ import { useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { mergeClasses } from '@fluentui/react-components';
 import { Navigation24Regular, Dismiss24Regular } from '@fluentui/react-icons';
-import { VeidneButton } from '@/shared/components/VeidneButton';
 import { Logo } from '@/shared/components/Logo';
 import { useTranslation } from '@/i18n/useTranslation';
 import { useTemplateStore } from '@/features/templates/store/templateStore';
@@ -60,9 +59,8 @@ export function NavBar({ variant = 'light', editor = false }: NavBarProps) {
           <Link to="/about" className={linkClass}>{t('nav.about')}</Link>
           <button type="button" className={mergeClasses(linkClass, styles.linkBtn)}
             onClick={openBugReport}>{t('nav.reportBug')}</button>
-          <Link to="/editor" style={{ textDecorationLine: 'none' }}>
-            <VeidneButton appearance="primary">{t('nav.startFree')}</VeidneButton>
-          </Link>
+          {/* One link styled as a button: no <a><button> nesting. */}
+          <Link to="/editor" className={styles.ctaLink}>{t('nav.startFree')}</Link>
         </div>
 
         {/* Mobile hamburger — visible below md */}
@@ -70,9 +68,10 @@ export function NavBar({ variant = 'light', editor = false }: NavBarProps) {
           type="button"
           className={mergeClasses(styles.hamburger, isLight ? styles.hamburgerLight : styles.hamburgerDark)}
           onClick={openMenu}
-          aria-label={t('a11y.openMenu')}
+          aria-expanded={mobileMenuOpen}
         >
-          <Navigation24Regular />
+          <Navigation24Regular aria-hidden="true" />
+          <span className={styles.menuWord}>{t('nav.menu')}</span>
         </button>
       </nav>
 
@@ -92,6 +91,8 @@ export function NavBar({ variant = 'light', editor = false }: NavBarProps) {
         )}
         role="dialog"
         aria-label={t('a11y.mobileMenu')}
+        aria-modal="true"
+        {...(!mobileMenuOpen ? { inert: '' } : {})}
       >
         <button
           type="button"
@@ -126,10 +127,8 @@ export function NavBar({ variant = 'light', editor = false }: NavBarProps) {
         </div>
 
         <div className={styles.drawerCta}>
-          <Link to="/editor" className={styles.drawerCtaLink} onClick={closeMenu}>
-            <VeidneButton appearance="primary" className={styles.drawerCtaBtn}>
-              {t('nav.startFree')}
-            </VeidneButton>
+          <Link to="/editor" className={mergeClasses(styles.ctaLink, styles.drawerCtaFull)} onClick={closeMenu}>
+            {t('nav.startFree')}
           </Link>
         </div>
       </div>

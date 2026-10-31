@@ -45,7 +45,7 @@ test('homepage mockup card opens the instant preview fast, pages records, fires 
   await expect(page.getByText('Drag and drop your Word document or template here')).toBeVisible();
 
   await page.goto(`${BASE}/`);
-  await page.getByRole('button', { name: 'Open a finished example' }).click();
+  await page.getByRole('link', { name: 'Open a finished example' }).click();
 
   await expect(page.getByText(BANNER, { exact: true })).toBeVisible({ timeout: 3000 });
   await expect(page.getByTestId('document-area')).toContainText('Dear Emily Rodriguez', { timeout: 3000 });
@@ -65,7 +65,7 @@ test('hero mockup card activates by keyboard', async ({ page }) => {
   const events = await interceptAnalytics(page);
   await page.goto(`${BASE}/`);
 
-  const card = page.getByRole('button', { name: 'Open a finished example' });
+  const card = page.getByRole('link', { name: 'Open a finished example' });
   await card.focus();
   await page.keyboard.press('Enter');
 

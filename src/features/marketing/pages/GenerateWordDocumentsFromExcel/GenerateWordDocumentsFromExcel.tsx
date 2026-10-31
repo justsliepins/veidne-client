@@ -13,15 +13,15 @@ export function GenerateWordDocumentsFromExcel() {
       <UseCaseGuide
         h1="Generate Word documents from Excel"
         lastUpdated="June 2026"
-        answer="Veidne is a free tool to generate Word documents from Excel, one personalized document for each row of your spreadsheet, directly in your browser. You upload a Word template, click the words you want to fill from your data to mark them as fields, upload your Excel file, and download the finished documents. It needs no install and no account, and your files stay on your device."
+        answer="Veidne is a free tool to generate Word documents from Excel, one personalized document for each row of your spreadsheet, directly in your browser. You open a Word template, click the words you want to fill from your data to mark them as fields, add your Excel file, and download the finished documents. It needs no install and no account, and your template and spreadsheet stay on your device."
         whatItIs="a tool that merges Excel rows into Word documents."
         whoItIsFor="people who keep their data in a spreadsheet and need a document per row, such as letters, certificates, invoices, or contracts, without writing code."
         free="yes, funded by donations."
         isPrivate="your spreadsheet and template never leave your browser."
         steps={[
-          'Upload your Word (.docx) template.',
+          'Open your Word (.docx) template.',
           'Click each word you want to pull from a spreadsheet column, for example a name, an amount, or a date, to turn it into a field.',
-          'Upload your Excel (.xlsx) file. Each column maps to a field, and each row becomes one document.',
+          'Add your Excel (.xlsx) file. Each column maps to a field, and each row becomes one document.',
           'Generate and download. You get one personalized Word file per row.',
         ]}
         extras={[

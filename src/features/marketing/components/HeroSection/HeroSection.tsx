@@ -1,60 +1,22 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { mergeClasses } from '@fluentui/react-components';
+import { Link } from 'react-router-dom';
+import { LockClosedRegular } from '@fluentui/react-icons';
 import { useTranslation } from '@/i18n/useTranslation';
 import { HeroCta } from '@/features/marketing/components/HeroCta';
 import { useHeroSectionStyles } from './HeroSection.styles';
 
-// Reveal order in the demo: 0=Name, 1=Date, 2=Location, then 4=Generate activates.
-const STEP_COUNT = 5;
-const STEP_DELAYS = [700, 850, 850, 850, 2900]; // ms each step is shown before advancing
-
-function prefersReducedMotion(): boolean {
-  return typeof window !== 'undefined'
-    && typeof window.matchMedia === 'function'
-    && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-}
-
+/**
+ * Homepage hero, audit version (nov 2026).
+ * Left: headline, what it does, the privacy promise with its one exception
+ * (PDF), and the two calls to action. Right: a static example of template,
+ * spreadsheet and resulting files. Nothing moves on its own (WCAG 2.2.2);
+ * the finished example stays one click away.
+ */
 export function HeroSection() {
   const styles = useHeroSectionStyles();
   const { t } = useTranslation();
-  const navigate = useNavigate();
-
-  const openInstantPreview = () => navigate('/editor?flow=instant&src=hero_mockup');
-
-  // Calm auto-playing demo loop. Reduced motion: jump to the fully populated state.
-  const [reduce] = useState(prefersReducedMotion);
-  const [step, setStep] = useState(reduce ? STEP_COUNT - 1 : 0);
-
-  useEffect(() => {
-    if (reduce) return;
-    let i = 0;
-    let timer: ReturnType<typeof setTimeout>;
-    const run = () => {
-      setStep(i);
-      const d = STEP_DELAYS[i];
-      i = (i + 1) % STEP_COUNT;
-      timer = setTimeout(run, d);
-    };
-    run();
-    return () => clearTimeout(timer);
-  }, [reduce]);
-
-  // chip/field index i is revealed once step has passed it (step > i).
-  const chip = (label: string, i: number) => (
-    <span className={mergeClasses(styles.chip, step <= i && styles.chipHidden)}>{label}</span>
-  );
-  const fieldRow = (label: string, i: number) => (
-    <div className={mergeClasses(styles.field, step <= i && styles.fieldHidden)}>
-      <span className={styles.fieldDot} />{label}
-    </div>
-  );
-  const fieldsCount = Math.max(0, Math.min(step, 3));
-  const genActive = step >= 4;
 
   return (
     <section className={styles.root}>
-      {/* Pure-CSS aurora, decorative, reduced-motion aware. */}
       <div className={styles.aurora} aria-hidden="true">
         <div className={`${styles.blob} ${styles.blob1}`} />
         <div className={`${styles.blob} ${styles.blob2}`} />
@@ -77,64 +39,60 @@ export function HeroSection() {
 
           <p className={styles.subtitle}>{t('landing.hero.subtitle')}</p>
 
-          {/* The two CTAs and the generated-documents counter (shared with the
-              use-case guides via HeroCta). */}
-          <HeroCta showCount />
+          <div className={styles.privacy}>
+            <LockClosedRegular className={styles.privacyIcon} aria-hidden="true" />
+            <p className={styles.privacyText}>
+              <strong className={styles.privacyStrong}>{t('landing.hero.privacyStrong')}</strong>{' '}
+              {t('landing.hero.privacyRest')}{' '}
+              <a href="#where-your-data-goes" className={styles.privacyLink}>{t('landing.hero.privacyLink')}</a>
+            </p>
+          </div>
 
+          <HeroCta showCount showNeeds />
         </div>
 
-        {/* Auto-playing demonstration of the flow; the card itself opens the
-            instant preview of the same sample document. */}
         <div className={styles.preview}>
-          <div
-            role="button"
-            tabIndex={0}
-            aria-label={t('landing.hero.mockupAria')}
-            className={styles.mockupButton}
-            onClick={openInstantPreview}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                openInstantPreview();
-              }
-            }}
-          >
-            <div className={styles.glass} aria-hidden="true">
-              <div className={styles.demoBar}>
-                <span className={styles.demoDot} style={{ backgroundColor: 'rgba(255,111,111,.33)' }} />
-                <span className={styles.demoDot} style={{ backgroundColor: 'rgba(255,209,111,.33)' }} />
-                <span className={styles.demoDot} style={{ backgroundColor: 'rgba(134,224,168,.33)' }} />
-              </div>
-              <div className={styles.demoBody}>
-                <div className={styles.demoDoc}>
-                  <div className={styles.page}>
-                    <div className={styles.pageTitle}>Invitation Letter</div>
-                    <p className={styles.pageText}>
-                      Dear {chip('Name', 0)},
-                      <br /><br />
-                      {"You're invited to our Annual Team Gathering!"}
-                      <br />
-                      Date: {chip('Date', 1)}
-                      <br />
-                      Location: {chip('Location', 2)}
-                      <br /><br />
-                      {"We'd love to see you there, "}{chip('Name', 0)}.
-                    </p>
-                  </div>
+          <div className={styles.glass}>
+            <div className={styles.demoBar} aria-hidden="true">
+              <span className={styles.demoDot} style={{ backgroundColor: 'rgba(255,111,111,.33)' }} />
+              <span className={styles.demoDot} style={{ backgroundColor: 'rgba(255,209,111,.33)' }} />
+              <span className={styles.demoDot} style={{ backgroundColor: 'rgba(134,224,168,.33)' }} />
+            </div>
+            <div className={styles.demoBody}>
+              <div className={styles.demoDoc}>
+                <div className={styles.sideLabel}>{t('landing.hero.example.label')}</div>
+                <div className={styles.page}>
+                  <div className={styles.pageTitle}>Certificate of completion</div>
+                  <p className={styles.pageText}>
+                    This certifies that <span className={styles.chip}>Name</span> completed{' '}
+                    <span className={styles.chip}>Course</span> on <span className={styles.chip}>Date</span>.
+                  </p>
                 </div>
-                <div className={styles.side}>
-                  <div className={styles.sideLabel}>{fieldsCount > 0 ? `Fields, ${fieldsCount}` : 'Fields'}</div>
-                  {fieldRow('Name', 0)}
-                  {fieldRow('Date', 1)}
-                  {fieldRow('Location', 2)}
-                  <div className={mergeClasses(styles.generateBtn, !genActive && styles.genInactive)}>
-                    Generate 24
-                  </div>
+              </div>
+              <div className={styles.side}>
+                <div className={styles.sideLabel}>{t('landing.hero.example.list')}</div>
+                <table className={styles.exTable}>
+                  <thead>
+                    <tr><th>Name</th><th>Course</th><th>Date</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr><td>Anna Bērziņa</td><td>First aid</td><td>14.05.2026</td></tr>
+                    <tr><td>Jānis Ozols</td><td>First aid</td><td>14.05.2026</td></tr>
+                    <tr><td className={styles.exMore} colSpan={3}>+ 78 rows</td></tr>
+                  </tbody>
+                </table>
+                <div className={styles.sideLabel} style={{ marginTop: 14 }}>{t('landing.hero.example.result')}</div>
+                <div className={styles.files}>
+                  <span className={styles.file}>Anna_Berzina.docx</span>
+                  <span className={styles.file}>Janis_Ozols.docx</span>
+                  <span className={styles.file}>+ 78 in one .zip</span>
                 </div>
               </div>
             </div>
           </div>
-          <p className={styles.previewCaption}>{t('landing.hero.mockupCaption')}</p>
+          <Link to="/editor?flow=instant&src=hero_mockup" className={styles.previewCaption}>
+            {t('landing.hero.mockupCaption')}
+          </Link>
         </div>
       </div>
     </section>

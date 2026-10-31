@@ -6,6 +6,10 @@ interface ImportMetaEnv {
   readonly VITE_IMAGE_FIELDS?: string;
   /** Experiment: Done screen variant B. 'true' turns it on; anything else is off. */
   readonly VITE_EXP_ASK_INLINE?: string;
+  /** Experiments on the homepage. 'true' turns each on; anything else is off. */
+  readonly VITE_EXP_HOME_USES?: string;
+  readonly VITE_EXP_HOME_FAQ?: string;
+  readonly VITE_EXP_HOME_OPEN_SOURCE?: string;
 }
 
 interface ImportMeta {

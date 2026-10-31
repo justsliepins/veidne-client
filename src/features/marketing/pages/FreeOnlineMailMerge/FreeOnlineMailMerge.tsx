@@ -13,15 +13,15 @@ export function FreeOnlineMailMerge() {
       <UseCaseGuide
         h1="Free online mail merge"
         lastUpdated="June 2026"
-        answer="Veidne is a free online mail merge tool that runs entirely in your browser. You upload a Word template, click the words you want to personalize to turn them into fields, upload an Excel spreadsheet, and Veidne creates one personalized Word document for every row. There is no install, no account, and your files never leave your device."
+        answer="Veidne is a free online mail merge tool that runs entirely in your browser. You open a Word template, click the words you want to personalize to turn them into fields, add an Excel spreadsheet, and Veidne creates one personalized Word document for every row. There is no install, no account, and your template and spreadsheet never leave your device."
         whatItIs="a browser-based mail merge for Word and Excel."
         whoItIsFor="anyone who needs many personalized documents and does not want to install software, create an account, or write code. It suits legal, HR, healthcare, education, and nonprofit work, where keeping files private matters."
         free="yes, funded by donations."
-        isPrivate="the merge happens on your own device. Nothing is uploaded."
+        isPrivate="the merge happens on your own device. Your template and spreadsheet never leave your device."
         steps={[
-          'Upload your Word (.docx) template.',
+          'Open your Word (.docx) template.',
           'Click the words you want to vary, such as a name or a date, to turn them into fields.',
-          'Upload your Excel (.xlsx) spreadsheet, where each column matches a field and each row is one document.',
+          'Add your Excel (.xlsx) spreadsheet, where each column matches a field and each row is one document.',
           'Generate, then download your personalized documents.',
         ]}
         extras={[

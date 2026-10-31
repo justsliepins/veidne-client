@@ -77,4 +77,11 @@ export const useHeroCtaStyles = makeStyles({
 
   socialProof: { display: 'flex', alignItems: 'center', gap: '9px' },
   socialProofText: { fontSize: '13.5px', fontWeight: 500, color: MUTED },
+  inlineBtn: {
+    background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit', fontSize: 'inherit',
+    color: PERI_DEEP, fontWeight: 600, textDecorationLine: 'underline', textUnderlineOffset: '2px',
+    ':focus-visible': { outline: `2px solid ${PERI}`, outlineOffset: '2px', borderRadius: '4px' },
+  },
+  trustLink: { color: PERI_DEEP, fontWeight: 600, textUnderlineOffset: '2px' },
+  needs: { margin: 0, fontSize: '14px', lineHeight: 1.5, color: MUTED, maxWidth: '46ch' },
 });

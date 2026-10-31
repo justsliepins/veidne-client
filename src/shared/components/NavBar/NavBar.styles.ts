@@ -51,7 +51,13 @@ export const useNavBarStyles = makeStyles({
   hamburger: {
     display: 'none',
     marginLeft: 'auto',
-    width: '44px',
+    gap: '6px',
+    paddingLeft: '10px',
+    paddingRight: '10px',
+    fontFamily: 'inherit',
+    fontSize: '15px',
+    fontWeight: 600,
+    minWidth: '44px',
     height: '44px',
     alignItems: 'center',
     justifyContent: 'center',
@@ -163,4 +169,15 @@ export const useNavBarStyles = makeStyles({
   drawerCtaBtn: {
     width: '100%',
   },
+  menuWord: { lineHeight: '20px' },
+  // Primary action as one link that looks like the hero button (no nested button).
+  ctaLink: {
+    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+    fontFamily: 'inherit', fontSize: '14px', fontWeight: 600, lineHeight: '20px',
+    padding: '12px 20px', borderRadius: '11px', backgroundColor: '#5566C4', color: '#FFFFFF',
+    textDecorationLine: 'none',
+    ':hover': { backgroundColor: '#46529E' },
+    ':focus-visible': { outline: '2px solid #5566C4', outlineOffset: '2px' },
+  },
+  drawerCtaFull: { width: '100%', minHeight: '48px' },
 });

@@ -97,7 +97,6 @@ export const useLandingStyles = makeStyles({
     [media.below.sm]: { padding: '40px 16px' },
   },
   ctaSubtitle: { ...veidneTypography.bodyLarge, color: tokens.colorNeutralForeground2, textAlign: 'center' },
-  ctaLink: { textDecorationLine: 'none' },
   // Answer-first internal links to the use-case guides, just below the hero so a
   // non-JS reader and AI crawlers find the four guide pages in the static HTML.
   guidesSection: {
@@ -130,6 +129,93 @@ export const useLandingStyles = makeStyles({
     ...veidneTypography.bodyRegular,
     color: '#46529E',
     textDecorationLine: 'none',
+    minHeight: '44px',
+    display: 'inline-flex',
+    alignItems: 'center',
     ':hover': { textDecorationLine: 'underline' },
   },
+  // Shared buttons for the new sections: same look as the hero CTAs.
+  btnPrimary: {
+    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+    fontFamily: 'inherit', fontSize: '15px', fontWeight: 600, padding: '14px 24px', borderRadius: '11px',
+    backgroundColor: '#5566C4', color: '#FFFFFF', textDecorationLine: 'none', cursor: 'pointer',
+    boxShadow: '0 10px 22px -9px rgba(85,102,196,.6)',
+    ':hover': { backgroundColor: '#46529E' },
+    ':focus-visible': { outline: '2px solid #5566C4', outlineOffset: '2px' },
+    '@media (max-width: 559px)': { width: '100%' },
+  },
+  btnGhost: {
+    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+    fontFamily: 'inherit', fontSize: '15px', fontWeight: 600, padding: '13px 22px', borderRadius: '11px',
+    backgroundColor: 'rgba(255,255,255,.55)', color: '#1A1622', textDecorationLine: 'none', cursor: 'pointer',
+    border: '1.5px solid rgba(26,22,34,.14)',
+    ':hover': { border: '1.5px solid #1A1622' },
+    ':focus-visible': { outline: '2px solid #5566C4', outlineOffset: '2px' },
+    '@media (max-width: 559px)': { width: '100%' },
+  },
+  inlineLink: { color: '#46529E', fontWeight: 600, textUnderlineOffset: '2px' },
+
+  resumeActions: {
+    display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center', justifyContent: 'center',
+    '@media (max-width: 559px)': { flexDirection: 'column', alignItems: 'stretch', width: '100%' },
+  },
+
+  dataSection: {
+    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '32px',
+    padding: '80px 48px', backgroundColor: '#FAFBFF',
+    [media.below.lg]: { padding: '48px 24px' },
+    [media.below.sm]: { padding: '40px 16px', gap: '24px' },
+  },
+  // The table wraps inside the column instead of scrolling sideways (WCAG 1.4.10).
+  tableWrap: { width: '100%', maxWidth: '920px' },
+  dataTable: {
+    width: '100%', borderCollapse: 'collapse', backgroundColor: '#FFFFFF', borderRadius: '14px', overflow: 'hidden',
+    boxShadow: '0px 1px 4px rgba(0, 0, 0, 0.04)', border: `1px solid ${tokens.colorNeutralStroke1}`,
+    ...veidneTypography.bodyRegular, color: tokens.colorNeutralForeground2,
+    '& th, & td': { textAlign: 'left', padding: '14px 18px', borderBottom: `1px solid ${tokens.colorNeutralStroke1}`, verticalAlign: 'top', overflowWrap: 'anywhere' },
+    '& thead th': { fontSize: '12px', lineHeight: '16px', fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase', color: tokens.colorNeutralForeground3, backgroundColor: '#FAFBFF' },
+    '& tbody th': { fontWeight: 600, color: tokens.colorNeutralForeground1 },
+    '& tbody tr:last-child th, & tbody tr:last-child td': { borderBottom: 'none' },
+    [media.below.sm]: { '& th, & td': { padding: '12px' }, fontSize: '14px' },
+  },
+  pillLocal: { display: 'inline-block', padding: '2px 10px', borderRadius: '999px', backgroundColor: 'rgba(21,128,61,.10)', color: '#166534', fontWeight: 600, fontSize: '13px' },
+  pillServer: { display: 'inline-block', padding: '2px 10px', borderRadius: '999px', backgroundColor: 'rgba(232,161,58,.16)', color: '#8A5A12', fontWeight: 600, fontSize: '13px' },
+  dataNote: { ...veidneTypography.bodyRegular, color: tokens.colorNeutralForeground2, textAlign: 'center', maxWidth: '640px' },
+
+  usesSection: {
+    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '32px',
+    padding: '80px 48px', backgroundColor: '#FFFFFF',
+    [media.below.lg]: { padding: '48px 24px' },
+    [media.below.sm]: { padding: '40px 16px', gap: '24px' },
+  },
+  usesGrid: {
+    display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '18px', width: '100%', maxWidth: '1080px',
+    '@media (max-width: 1023px)': { gridTemplateColumns: 'repeat(2, 1fr)' },
+    '@media (max-width: 559px)': { gridTemplateColumns: '1fr' },
+  },
+  useCard: {
+    display: 'flex', flexDirection: 'column', gap: '8px', padding: '22px',
+    borderRadius: '16px', border: `1px solid ${tokens.colorNeutralStroke1}`, backgroundColor: '#FFFFFF',
+    boxShadow: '0px 1px 4px rgba(0, 0, 0, 0.04)',
+  },
+  useIcon: { fontSize: '24px', color: '#46529E' },
+  useTitle: { ...veidneTypography.bodyLarge, fontWeight: 600, color: tokens.colorNeutralForeground1 },
+  useText: { ...veidneTypography.bodySmall, color: tokens.colorNeutralForeground2 },
+
+  faqSection: {
+    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '28px',
+    padding: '80px 48px', backgroundColor: '#FAFBFF',
+    [media.below.lg]: { padding: '48px 24px' },
+    [media.below.sm]: { padding: '40px 16px', gap: '24px' },
+  },
+  faqList: { display: 'flex', flexDirection: 'column', gap: '10px', width: '100%', maxWidth: '760px' },
+  faqItem: {
+    backgroundColor: '#FFFFFF', borderRadius: '12px', border: `1px solid ${tokens.colorNeutralStroke1}`, padding: '0 18px',
+  },
+  faqQ: {
+    ...veidneTypography.bodyRegular, fontWeight: 600, color: tokens.colorNeutralForeground1,
+    minHeight: '52px', display: 'flex', alignItems: 'center', cursor: 'pointer',
+  },
+  faqA: { ...veidneTypography.bodyRegular, color: tokens.colorNeutralForeground2, paddingBottom: '16px' },
+
 });

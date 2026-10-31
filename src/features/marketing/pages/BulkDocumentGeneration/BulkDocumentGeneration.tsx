@@ -13,15 +13,15 @@ export function BulkDocumentGeneration() {
       <UseCaseGuide
         h1="Bulk document generation from a spreadsheet"
         lastUpdated="June 2026"
-        answer="Veidne is a free tool for bulk document generation from a spreadsheet. You upload a Word template, click words to mark where your data goes, upload an Excel file, and Veidne produces one personalized document for every row, with no code and no install. It all runs in your browser, so your files never leave your device."
+        answer="Veidne is a free tool for bulk document generation from a spreadsheet. You open a Word template, click words to mark where your data goes, add an Excel file, and Veidne produces one personalized document for every row, with no code and no install. It all runs in your browser, so your template and spreadsheet never leave your device."
         whatItIs="bulk, no-code document generation from a spreadsheet."
         whoItIsFor="non-technical people who need many documents at once and do not want to write a script. Common uses are bulk letters, certificates, invoices, and contracts. It is a good fit for legal, HR, healthcare, education, and nonprofit teams that need files to stay private."
         free="yes, funded by donations."
         isPrivate="the documents are built on your own device, not on a server."
         steps={[
-          'Upload your Word (.docx) template.',
+          'Open your Word (.docx) template.',
           'Click the words that should change from one document to the next to turn them into fields.',
-          'Upload your Excel (.xlsx) spreadsheet. One row produces one document.',
+          'Add your Excel (.xlsx) spreadsheet. One row produces one document.',
           'Generate, then download all of your documents.',
         ]}
         extras={[

@@ -110,4 +110,19 @@ export const useFooterStyles = makeStyles({
       paddingRight: '8px',
     },
   },
+  cols: {
+    flexBasis: '100%',
+    display: 'grid',
+    gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+    gap: '24px 32px',
+    [media.below.lg]: { gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' },
+    [media.below.md]: { gridTemplateColumns: '1fr', textAlign: 'center' as const },
+  },
+  col: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    alignItems: 'flex-start',
+    gap: '6px',
+    [media.below.md]: { alignItems: 'center' },
+  },
 });

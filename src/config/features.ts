@@ -32,4 +32,10 @@ export const features = {
   // Done screen, variant B: no dialog after the first download; the donation
   // card moves up under the saved notice instead.
   expAskInline: import.meta.env.VITE_EXP_ASK_INLINE === 'true',
+  // Homepage: the "What people make with Veidne" section with four cards.
+  expHomeUses: import.meta.env.VITE_EXP_HOME_USES === 'true',
+  // Homepage: the "Questions before you start" section.
+  expHomeFaq: import.meta.env.VITE_EXP_HOME_FAQ === 'true',
+  // Hero: the open-source line under the buttons.
+  expHomeOpenSource: import.meta.env.VITE_EXP_HOME_OPEN_SOURCE === 'true',
 } as const;
