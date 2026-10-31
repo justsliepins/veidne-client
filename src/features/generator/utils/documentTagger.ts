@@ -504,5 +504,5 @@ export function createTaggedTemplate(
   }
 
   zip.file('word/document.xml', xml);
-  return zip.generate({ type: 'arraybuffer' });
+  return zip.generate({ type: 'arraybuffer', compression: 'DEFLATE' });
 }

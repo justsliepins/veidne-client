@@ -16,5 +16,5 @@ export async function createZipFromFiles(
 ): Promise<Blob> {
   const zip = new JSZip();
   for (const f of files) zip.file(f.name, f.blob);
-  return zip.generateAsync({ type: 'blob' });
+  return zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
 }

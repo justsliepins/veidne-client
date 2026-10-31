@@ -199,8 +199,11 @@ export function generateDocument(
     swapImagesInZip(out, imageSwaps);
   }
 
+  // DEFLATE, as Word itself saves: PizZip's default is STORE, which wrote every
+  // document at its uncompressed size (a 36 KB certificate became 810 KB).
   return out.generate({
     type: 'blob',
     mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    compression: 'DEFLATE',
   });
 }
