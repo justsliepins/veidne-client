@@ -37,7 +37,7 @@ export function Footer() {
           dismissible. The editor hides the whole footer, so it never shows there. */}
       <p className={styles.funding}>
         {t('footer.funding')}{' '}
-        <Link to="/about" className={styles.fundingLink}>{t('footer.fundingLink')}</Link>
+        <Link to="/about#support" className={styles.fundingLink}>{t('footer.fundingLink')}</Link>
       </p>
     </footer>
   );

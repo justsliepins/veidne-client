@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useSearchParams, useLocation } from 'react-router-dom';
 import { PageLayout } from '@/shared/components/PageLayout';
 import { PageSeo } from '@/shared/components/PageSeo';
 import { VeidneButton } from '@/shared/components/VeidneButton';
@@ -13,6 +13,15 @@ export function About() {
   const [searchParams] = useSearchParams();
   const [donationOpen, setDonationOpen] = useState(false);
   const donated = searchParams.get('donated') === 'true';
+  // "Support Veidne" in the footer links to /about#support; React Router does
+  // not scroll to a hash by itself.
+  const { hash } = useLocation();
+  useEffect(() => {
+    if (hash !== '#support') return;
+    const el = document.getElementById('support');
+    el?.scrollIntoView({ block: 'center' });
+    el?.focus({ preventScroll: true });
+  }, [hash]);
   // No window during the static prerender (see src/prerender/render.tsx).
   const origin = typeof window === 'undefined' ? 'https://veidne.com' : window.location.origin;
 
@@ -53,7 +62,7 @@ export function About() {
           <p className={styles.storyParagraph}>{t('about.costs.p2')}</p>
         </section>
 
-        <div className={styles.supportBox}>
+        <div className={styles.supportBox} id="support" tabIndex={-1}>
           <h3 className={styles.supportHeading}>{t('about.support.heading')}</h3>
           <p className={styles.supportDescription}>{t('about.support.description')}</p>
           {donated && <p className={styles.thankYou}>{t('donation.modal.thankYou')}</p>}
