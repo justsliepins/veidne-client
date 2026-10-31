@@ -30,7 +30,7 @@ Analytics. `src/services/analyticsService.ts` posts to `/api/analytics` on user 
 
 Social proof counter. `src/services/statsService.ts` fetches `/api/social-proof` with a GET request and no body to show the number of documents generated so far on the homepage and the guide pages. The request carries the cookie described above and nothing else, and the counter is simply omitted when it fails.
 
-Template library. `src/services/templateService.ts` fetches the template list from `/api/templates` and a chosen template from `/api/templates/{slug}/download`. The request contains the template slug and nothing else. If the backend is unavailable it falls back to the list embedded in the same file and to the `.docx` files in `public/templates`.
+Template library. `src/services/templateService.ts` fetches the template list from `/api/templates` and a chosen template from `/api/templates/{slug}/download`. The request contains the template slug and nothing else. If the backend is unavailable, or does not answer within five seconds (`TEMPLATE_API_TIMEOUT_MS`), it falls back to the list embedded in the same file and to the `.docx` files in `public/templates`.
 
 Donations. `src/services/donationService.ts` posts the chosen amount in cents, the currency and two return URLs to `/api/donations/create-session` and receives the URL of a Stripe-hosted checkout page, to which the browser is then sent. The client never loads Stripe's JavaScript and contains no Stripe key. After a donation, the thank-you page sends the session id from its own URL to `/api/donations/session/{id}` to display the amount, repeating the request every three seconds for up to a minute while Stripe's confirmation is still pending.
 

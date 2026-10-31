@@ -124,8 +124,16 @@ export const useStyles = makeStyles({
     flexGrow: 0, flexShrink: 0, flexBasis: 'auto',
     paddingTop: '14px',
     borderTop: '1px solid rgba(255, 255, 255, 0.12)',
-    display: 'flex', justifyContent: 'center',
+    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px',
     width: '100%', maxWidth: '600px', alignSelf: 'center',
+  },
+  // What "Use this template" does to a saved project; light on the dark lightbox.
+  lightboxNote: {
+    fontSize: '14px', lineHeight: '20px', fontWeight: 400, color: '#E8E6EE', textAlign: 'center', maxWidth: '400px',
+  },
+  // Shown when "Use this template" fails; light red on the dark lightbox, about 10:1.
+  lightboxError: {
+    fontSize: '14px', lineHeight: '20px', fontWeight: 500, color: '#FFCDD2', textAlign: 'center', maxWidth: '400px',
   },
   lightboxNameRow: {
     display: 'flex', alignItems: 'center', gap: '10px',
@@ -206,5 +214,29 @@ export const useStyles = makeStyles({
   },
   lightboxArrowRight: {
     right: '16px',
+  },
+  stateBox: {
+    width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center',
+    gap: '12px', paddingTop: '40px', paddingBottom: '24px',
+  },
+  stateTitle: { fontSize: '17px', lineHeight: '24px', fontWeight: 600, color: '#1A1622' },
+  stateText: { fontSize: '15px', lineHeight: '24px', color: '#5E5560', maxWidth: '460px', margin: 0 },
+  stateActions: { display: 'flex', flexWrap: 'wrap', gap: '12px', justifyContent: 'center', marginTop: '4px' },
+  statePrimary: {
+    display: 'inline-flex', alignItems: 'center', minHeight: '44px', padding: '12px 20px', borderRadius: '11px',
+    backgroundColor: '#5566C4', color: '#FFFFFF', fontWeight: 600, fontSize: '14px', textDecorationLine: 'none',
+    ':hover': { backgroundColor: '#46529E' },
+    ':focus-visible': { outline: '2px solid #5566C4', outlineOffset: '2px' },
+  },
+  stateGhost: {
+    display: 'inline-flex', alignItems: 'center', minHeight: '44px', padding: '11px 18px', borderRadius: '11px', cursor: 'pointer',
+    backgroundColor: '#FFFFFF', color: '#1A1622', fontWeight: 600, fontSize: '14px', fontFamily: 'inherit',
+    border: '1.5px solid rgba(26,22,34,.14)',
+    ':focus-visible': { outline: '2px solid #5566C4', outlineOffset: '2px' },
+  },
+  // Visually hidden, still read by screen readers (the live region).
+  srOnly: {
+    position: 'absolute', width: '1px', height: '1px', margin: '-1px', padding: 0, overflow: 'hidden',
+    clipPath: 'inset(50%)', whiteSpace: 'nowrap', border: 0,
   },
 });

@@ -32,18 +32,40 @@ export const STATIC_TEMPLATES: TemplateItem[] = [
   { id: 25, slug: 'service-agreement', name: 'Service Agreement', description: 'Agreement for professional services between parties', category: 'Business', fields: ['DATE', 'PROVIDER_NAME', 'PROVIDER_ID', 'PROVIDER_ADDRESS', 'CLIENT_NAME', 'CLIENT_ID', 'CLIENT_ADDRESS', 'SERVICE_DESCRIPTION', 'DELIVERABLES', 'START_DATE', 'END_DATE', 'FEE', 'PAYMENT_TERMS', 'PROVIDER_SIGNATURE', 'CLIENT_SIGNATURE'] },
 ];
 
+/** How long the template API may take, body included, before the built-in
+ *  list and the static files in public/templates are used instead. A request
+ *  that never answers would otherwise never fall back. */
+export const TEMPLATE_API_TIMEOUT_MS = 5000;
+
+/** GET from the template API with a deadline. `read` consumes the body inside
+ *  the deadline, so a server that sends headers and then stalls is cut off too.
+ *  Rejects on timeout or network failure; the callers fall back. */
+async function fetchTemplateApi<T>(path: string, read: (res: Response) => Promise<T>): Promise<T> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), TEMPLATE_API_TIMEOUT_MS);
+  try {
+    const res = await fetch(`${API_BASE_URL}${path}`, { credentials: 'include', signal: controller.signal });
+    return await read(res);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/** Never rejects: an error, an empty answer or no answer within the timeout
+ *  all resolve to STATIC_TEMPLATES. */
 export async function getTemplates(): Promise<TemplateItem[]> {
   try {
-    const res = await fetch(`${API_BASE_URL}/templates`, { credentials: 'include' });
-    if (!res.ok) return STATIC_TEMPLATES;
-    const data = await res.json();
-    if (data.templates?.length) {
-      return data.templates.map((t: any) => {
-        const staticMatch = STATIC_TEMPLATES.find(s => s.slug === t.slug);
-        return { ...t, fields: t.fields || staticMatch?.fields || [] };
-      });
-    }
-    return STATIC_TEMPLATES;
+    return await fetchTemplateApi('/templates', async (res) => {
+      if (!res.ok) return STATIC_TEMPLATES;
+      const data = await res.json();
+      if (data.templates?.length) {
+        return data.templates.map((t: any) => {
+          const staticMatch = STATIC_TEMPLATES.find(s => s.slug === t.slug);
+          return { ...t, fields: t.fields || staticMatch?.fields || [] };
+        });
+      }
+      return STATIC_TEMPLATES;
+    });
   } catch {
     return STATIC_TEMPLATES;
   }
@@ -51,9 +73,9 @@ export async function getTemplates(): Promise<TemplateItem[]> {
 
 export async function downloadTemplate(slug: string): Promise<ArrayBuffer> {
   try {
-    const res = await fetch(`${API_BASE_URL}/templates/${slug}/download`, { credentials: 'include' });
-    if (res.ok) return res.arrayBuffer();
-  } catch { /* fall through to static file */ }
+    const buf = await fetchTemplateApi(`/templates/${slug}/download`, (res) => (res.ok ? res.arrayBuffer() : Promise.resolve(null)));
+    if (buf) return buf;
+  } catch { /* timed out or failed: fall through to static file */ }
   const res = await fetch(`/templates/${slug}.docx`);
   if (!res.ok) throw new Error(`Failed to download template: ${slug}`);
   return res.arrayBuffer();
