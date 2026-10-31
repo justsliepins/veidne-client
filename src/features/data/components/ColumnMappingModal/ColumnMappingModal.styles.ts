@@ -77,6 +77,7 @@ export const useStyles = makeStyles({
   // overflowed into the preview column and was clipped at the dialog edge.
   dropdown: {
     width: '100%', minWidth: '0', fontSize: '13px',
+    [media.below.sm]: { minHeight: '44px' },
   },
   // Calm, muted explanation that an unmapped column is skipped. Clears on map.
   skipHint: {

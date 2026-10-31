@@ -29,11 +29,13 @@ export const useStyles = makeStyles({
     [media.below.sm]: { width: '95vw', ...shorthands.padding('24px') },
   },
   titleRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
-  title: { fontSize: '24px', lineHeight: '32px', fontWeight: 600, letterSpacing: '-0.01em', color: '#1A1622' },
+  title: { margin: '0', fontSize: '24px', lineHeight: '32px', fontWeight: 600, letterSpacing: '-0.01em', color: '#1A1622' },
+  // 44 px hit area around the 24 px icon; negative margins keep the icon where it was.
   closeBtn: {
     ...shorthands.borderStyle('none'), backgroundColor: 'transparent',
     cursor: 'pointer', color: '#5E5560', fontSize: '24px',
-    display: 'flex', alignItems: 'center', padding: '0',
+    display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0',
+    width: '44px', height: '44px', marginTop: '-10px', marginBottom: '-10px', marginRight: '-10px',
     ':focus-visible': { outlineWidth: '2px', outlineStyle: 'solid', outlineColor: '#5566C4', outlineOffset: '2px' },
   },
   subtitle: { fontSize: '15px', lineHeight: '24px', fontWeight: 400, color: '#5E5560' },
@@ -59,9 +61,13 @@ export const useStyles = makeStyles({
     color: '#46529E',
     ':hover': { backgroundColor: 'rgba(85, 102, 196, 0.16)' },
   },
+  customField: { display: 'flex', flexDirection: 'column', gap: '6px' },
+  customLabel: { fontSize: '13px', lineHeight: '20px', fontWeight: 600, color: '#1A1622' },
+  customHint: { fontSize: '13px', lineHeight: '20px', color: '#5E5560' },
   customInput: {
     width: '100%', height: '48px', borderRadius: '11px',
-    ...shorthands.borderStyle('solid'), ...shorthands.borderWidth('1px'), ...shorthands.borderColor('rgba(26, 22, 34, 0.14)'),
+    // 3.6:1 on white: a field border needs 3:1 (WCAG 1.4.11).
+    ...shorthands.borderStyle('solid'), ...shorthands.borderWidth('1px'), ...shorthands.borderColor('#8A8494'),
     padding: '0 16px', fontSize: '15px', lineHeight: '24px', fontWeight: 400, color: '#1A1622',
     outlineStyle: 'none', boxSizing: 'border-box',
     '::placeholder': { color: '#767077' },
@@ -79,5 +85,6 @@ export const useStyles = makeStyles({
     ':disabled': { opacity: '0.6', cursor: 'not-allowed' },
     '@media (prefers-reduced-motion: reduce)': { transitionProperty: 'none' },
   },
-  error: { fontSize: '13px', lineHeight: '20px', fontWeight: 400, color: '#D9534F', textAlign: 'center' },
+  error: { fontSize: '13px', lineHeight: '20px', fontWeight: 400, color: '#B91C1C', textAlign: 'center' },
+  stripeNote: { fontSize: '13px', lineHeight: '20px', fontWeight: 400, color: '#5E5560', textAlign: 'center' },
 });

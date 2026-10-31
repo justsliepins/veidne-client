@@ -59,6 +59,9 @@ export const useStyles = makeStyles({
     textDecorationLine: 'underline',
     ':hover': { color: '#46529E' },
     ':focus-visible': { outlineWidth: '2px', outlineStyle: 'solid', outlineColor: '#5566C4', outlineOffset: '2px' },
+    // Phone: the marked template is the way to repeat a run; give it a full
+    // finger target, on its own line so the sentence keeps even line spacing.
+    [media.below.sm]: { display: 'flex', alignItems: 'center', minHeight: '44px', marginLeft: 'auto', marginRight: 'auto' },
   },
   // Genuine primary action: periwinkle fill, darkens on hover, soft lift shadow.
   btnPrimary: {

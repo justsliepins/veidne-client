@@ -27,6 +27,7 @@ export const useStyles = makeStyles({
     ':focus-visible': { outlineWidth: '2px', outlineStyle: 'solid', outlineColor: PERIWINKLE, outlineOffset: '2px' },
     '@media (prefers-reduced-motion: reduce)': { transitionProperty: 'none' },
     [media.below.md]: { padding: '6px 10px', fontSize: '12px' },
+    [media.below.sm]: { minHeight: '44px' },
   },
   triggerDisabled: {
     ...shorthands.borderColor('rgba(26, 22, 34, 0.14)'),

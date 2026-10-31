@@ -12,6 +12,7 @@ export const useStyles = makeStyles({
     transitionProperty: 'opacity, transform',
     transitionDuration: '400ms',
     transitionTimingFunction: 'ease',
+    '@media (prefers-reduced-motion: reduce)': { transitionProperty: 'none' },
   },
   empty: {
     display: 'inline',
@@ -22,6 +23,7 @@ export const useStyles = makeStyles({
     transitionProperty: 'opacity, transform',
     transitionDuration: '400ms',
     transitionTimingFunction: 'ease',
+    '@media (prefers-reduced-motion: reduce)': { transitionProperty: 'none' },
   },
   revealing: {
     opacity: 0,

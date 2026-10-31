@@ -83,6 +83,7 @@ export const useStyles = makeStyles({
     [media.below.md]: {
       padding: '8px 16px',
       fontSize: '13px',
+      minHeight: '44px',
     },
   },
   // The step bar's right slot: the template link, then Generate, one line.
@@ -95,11 +96,19 @@ export const useStyles = makeStyles({
     ':hover': { color: '#3B3E8F' },
     ':focus-visible': { outlineWidth: '2px', outlineStyle: 'solid', outlineColor: '#5566C4', outlineOffset: '2px' },
   },
+  // Below 768 px the same link sits in the preview panel header, as tall as a finger.
+  saveTemplateLinkPanel: {
+    backgroundColor: 'transparent', ...shorthands.borderStyle('none'), padding: '0', minHeight: '44px',
+    fontSize: '14px', lineHeight: '20px', fontWeight: 500, cursor: 'pointer',
+    color: '#4F52B2', textDecorationLine: 'underline', textUnderlineOffset: '2px',
+    ':focus-visible': { outlineWidth: '2px', outlineStyle: 'solid', outlineColor: '#5566C4', outlineOffset: '2px' },
+  },
   countBadge: { backgroundColor: veidneTokens.colors.badgeBg, borderRadius: '12px', padding: '2px 10px', fontSize: '13px', fontWeight: 400, color: '#FFFFFF' },
   undoToolbar: {
     display: 'flex',
     alignItems: 'center',
     height: '40px',
+    [media.below.sm]: { height: '48px' },
     ...shorthands.padding('0', '16px'),
     backgroundColor: '#F3F4F6',
     flexShrink: 0,
@@ -117,6 +126,7 @@ export const useStyles = makeStyles({
     color: '#5E5560',
     cursor: 'pointer',
     ':hover': { backgroundColor: '#E5E7EB' },
+    [media.below.sm]: { minHeight: '44px', ...shorthands.padding('0', '12px') },
   },
   undoBtnDisabled: {
     opacity: 0.4,
@@ -153,17 +163,5 @@ export const useStyles = makeStyles({
       borderTopColor: 'rgba(26,22,34,.1)',
       boxShadow: '0 -6px 18px -12px rgba(26,22,34,.35)',
     },
-  },
-  // Follow-up actions inside the generate error toast.
-  errorActionBtn: {
-    ...shorthands.borderStyle('none'), backgroundColor: 'transparent', padding: '0', cursor: 'pointer',
-    fontSize: '14px', lineHeight: '20px', fontWeight: 600, color: '#46529E',
-    ':hover': { textDecorationLine: 'underline' },
-    ':focus-visible': { outlineWidth: '2px', outlineStyle: 'solid', outlineColor: '#5566C4', outlineOffset: '2px' },
-  },
-  errorActionLink: {
-    fontSize: '14px', lineHeight: '20px', fontWeight: 500, color: '#46529E', textDecorationLine: 'underline',
-    ':hover': { color: '#5566C4' },
-    ':focus-visible': { outlineWidth: '2px', outlineStyle: 'solid', outlineColor: '#5566C4', outlineOffset: '2px' },
   },
 });

@@ -138,9 +138,13 @@ test('flag on: object URLs are revoked across repeated uploads', async ({ page }
   // then "Use my files" and a second upload; the editor's unsaved-work confirm
   // is accepted. (The hero's main button now keeps the work in progress,
   // homepage audit finding 21, so it no longer starts a fresh upload.)
+  // With the project saved, the finished example first asks before it
+  // replaces it (work package 11), so wait for the save and confirm there.
+  await expect.poll(() => page.evaluate(() => localStorage.getItem('veidne_session') !== null), { timeout: 10_000 }).toBe(true);
   page.on('dialog', (dialog) => void dialog.accept());
   await page.locator('a[href="/"]').first().click();
   await page.locator('a[href*="flow=instant"], [aria-label="Open a finished example"]').first().click();
+  await page.getByRole('button', { name: 'Delete it and try the sample' }).click();
   await page.getByRole('button', { name: 'Use my files' }).click();
   await page.locator('input[type="file"]').setInputFiles(TEMPLATE_A);
   await expect(page.getByTestId('doc-image')).toHaveCount(1);

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { t } from '@/i18n/i18n';
 import type { GeneratedFile } from '../../store/generatorStore';
 import { FileItem } from './FileItem';
 import { useStyles } from './FileList.styles';
@@ -27,14 +28,14 @@ export function FileList({ files, onDownloadFile }: FileListProps) {
       </div>
       {totalPages > 1 && (
         <div className={s.pagination}>
-          <button type="button" className={s.arrow}
+          <button type="button" className={s.arrow} aria-label={t('a11y.prevPage')}
             disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)}>
             {'\u2039'}
           </button>
           <span className={s.currentPage}>{currentPage}</span>
           <span className={s.pageText}>of</span>
           <span className={s.pageText}>{totalPages}</span>
-          <button type="button" className={s.arrow}
+          <button type="button" className={s.arrow} aria-label={t('a11y.nextPage')}
             disabled={currentPage === totalPages} onClick={() => setCurrentPage(p => p + 1)}>
             {'\u203A'}
           </button>

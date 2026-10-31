@@ -5,7 +5,7 @@ import { normalizeFieldsInDocx } from '../utils/normalizeFields';
 import { setImageFieldTag, clearImageFieldTagsByName, imageFieldNameFromDescr } from '../utils/imageFieldXml';
 import { useDataStore } from '@/features/data/store/dataStore';
 import type { WordToken, Placeholder, SelectionState, EditorSnapshot, PageLayout, ParagraphStyle } from '../utils/types';
-import { findAllOccurrences, getTokenRange, getSelectedText, snap, idle, detectTemplatePlaceholders } from './editorHelpers';
+import { findAllOccurrences, getTokenRange, getSelectedText, snap, idle, detectTemplatePlaceholders, nextSelectableWordId } from './editorHelpers';
 import { createTaggedTemplate } from '@/features/generator/utils/documentTagger';
 import { checkTemplateCompiles, TemplateSyntaxError } from '@/features/generator/utils/documentGenerator';
 
@@ -22,6 +22,7 @@ interface EditorState {
   restoreSession: (rawBytes: ArrayBuffer, fileName: string, savedPlaceholders: unknown[]) => Promise<void>;
   clickWord: (tokenId: string) => void; hoverWord: (tokenId: string) => void;
   extendSelectionTo: (tokenId: string) => void;
+  extendSelectionToNextWord: () => void;
   clearHover: () => void; cancelSelection: () => void;
   createPlaceholder: (name: string) => void; renamePlaceholder: (id: string, newName: string) => void;
   deletePlaceholder: (id: string) => void; selectPlaceholder: (id: string | null) => void;
@@ -125,6 +126,20 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     if (!firstClickTokenId) return;
     const range = getTokenRange(wordTokens, firstClickTokenId, tokenId);
     set({ selectionState: range.length > 1 ? 'rangeSelected' : 'oneWord', selectedTokenIds: range });
+  },
+
+  // Touch: "Extend to next word" in the naming sheet. Grows the selection by
+  // one word to the right of its last word, whichever end was tapped first,
+  // and re-anchors on the first word so a later tap starts a new selection.
+  extendSelectionToNextWord: () => {
+    const { selectedTokenIds, wordTokens, placeholders } = get();
+    if (selectedTokenIds.length === 0) return;
+    const claimed = new Set<string>();
+    placeholders.forEach(p => p.occurrences.forEach(o => o.forEach(id => claimed.add(id))));
+    const next = nextSelectableWordId(wordTokens, claimed, selectedTokenIds[selectedTokenIds.length - 1]);
+    if (!next) return;
+    set({ selectionState: 'rangeSelected', firstClickTokenId: selectedTokenIds[0],
+      selectedTokenIds: getTokenRange(wordTokens, selectedTokenIds[0], next) });
   },
 
   hoverWord: (tokenId) => set({ hoveredTokenId: tokenId }),

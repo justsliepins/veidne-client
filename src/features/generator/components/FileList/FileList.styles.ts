@@ -16,7 +16,7 @@ export const useStyles = makeStyles({
     gap: '12px', height: '50px', marginTop: '8px',
   },
   arrow: {
-    width: '26px', height: '50px',
+    width: '44px', height: '50px',
     backgroundColor: '#FAFBFF', borderRadius: '6px',
     ...shorthands.borderStyle('none'), cursor: 'pointer',
     display: 'flex', alignItems: 'center', justifyContent: 'center',

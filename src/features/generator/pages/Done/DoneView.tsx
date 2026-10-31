@@ -20,6 +20,7 @@ import { DownloadCompleteModal, type DismissMethod } from '@/features/donation/c
 import { isRecentDonor, isRecentlyDeclined, rememberDecline } from '@/features/donation/utils/askMemory';
 import { FileList } from '../../components/FileList';
 import { PdfFlow } from '../../components/PdfFlow';
+import { focusAfterDialog } from '@/shared/utils/focusAfterDialog';
 import { useStyles } from './DoneView.styles';
 
 interface DoneViewProps {
@@ -42,6 +43,8 @@ const FILE_MODAL_DELAY_MS = 4000;
 // than once for one run (StrictMode, the PDF consent gate, the stale-phase
 // remount). Keyed on the run's generated files array.
 const modalOpenedForRun: { run: object | null } = { run: null };
+// Runs whose heading has already taken focus, so a remount does not move it again.
+const headingFocusedRuns = new WeakSet<object>();
 
 type DownloadKind = 'word' | 'pdf' | 'file';
 
@@ -107,6 +110,16 @@ export function DoneView({ isDemo }: DoneViewProps) {
     useDoneGuard.getState().setMessage(protect ? confirmText : null);
     return () => useDoneGuard.getState().setMessage(null);
   }, [protect, confirmText]);
+
+  // Generation has just ended: the progress dialog and its Cancel button are
+  // gone. Focus the heading ("24 documents generated") once per run, so focus
+  // is not lost and a screen reader announces the result (WCAG 2.4.3, 4.1.3).
+  // No cleanup on purpose: StrictMode's second mount must not cancel it.
+  useEffect(() => {
+    if (count === 0 || headingFocusedRuns.has(generatedFiles)) return;
+    headingFocusedRuns.add(generatedFiles);
+    focusAfterDialog(() => document.querySelector<HTMLElement>('[data-done-heading]'));
+  }, [count, generatedFiles]);
 
   const markDownloaded = useCallback((kind: DownloadKind, stem?: string) => {
     const d = downloadsFor(generatedFiles);

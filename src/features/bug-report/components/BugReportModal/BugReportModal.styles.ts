@@ -25,25 +25,30 @@ export const useStyles = makeStyles({
     [media.below.sm]: { width: '95vw', ...shorthands.padding('20px') },
   },
   titleRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
-  title: { fontSize: '24px', lineHeight: '32px', fontWeight: 700, color: '#1A1622' },
+  title: { margin: '0', fontSize: '24px', lineHeight: '32px', fontWeight: 700, color: '#1A1622' },
+  // 44 px hit area around the 24 px icon; negative margins keep the icon where it was.
   closeBtn: {
     ...shorthands.borderStyle('none'), backgroundColor: 'transparent',
     cursor: 'pointer', color: '#5E5560', fontSize: '24px',
-    display: 'flex', alignItems: 'center', padding: '0',
+    display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0',
+    width: '44px', height: '44px', marginTop: '-10px', marginBottom: '-10px', marginRight: '-10px',
+    ':focus-visible': { outlineWidth: '2px', outlineStyle: 'solid', outlineColor: '#5566C4', outlineOffset: '2px' },
   },
   subtitle: { fontSize: '15px', lineHeight: '24px', fontWeight: 400, color: '#5E5560' },
-  label: { fontSize: '13px', lineHeight: '20px', fontWeight: 600, color: '#1A1622', marginBottom: '6px' },
+  label: { display: 'block', fontSize: '13px', lineHeight: '20px', fontWeight: 600, color: '#1A1622', marginBottom: '6px' },
+  // A message about one field, directly under it (FORM-19).
+  fieldError: { fontSize: '13px', lineHeight: '20px', fontWeight: 500, color: '#B91C1C', marginTop: '4px' },
   hint: { fontSize: '13px', lineHeight: '20px', fontWeight: 400, color: '#5E5560', marginTop: '4px' },
   input: {
     width: '100%', height: '48px', borderRadius: '6px', boxSizing: 'border-box',
-    ...shorthands.borderStyle('solid'), ...shorthands.borderWidth('1px'), ...shorthands.borderColor('#E8E8F0'),
+    ...shorthands.borderStyle('solid'), ...shorthands.borderWidth('1px'), ...shorthands.borderColor('#8A8494'),
     padding: '0 16px', fontSize: '15px', lineHeight: '24px', fontWeight: 400, color: '#1A1622',
     outlineStyle: 'none', '::placeholder': { color: '#5E5560' },
     ':focus': { ...shorthands.borderColor('#46529E') },
   },
   textarea: {
     width: '100%', minHeight: '120px', borderRadius: '6px', boxSizing: 'border-box',
-    ...shorthands.borderStyle('solid'), ...shorthands.borderWidth('1px'), ...shorthands.borderColor('#E8E8F0'),
+    ...shorthands.borderStyle('solid'), ...shorthands.borderWidth('1px'), ...shorthands.borderColor('#8A8494'),
     padding: '12px 16px', fontSize: '15px', lineHeight: '24px', fontWeight: 400, color: '#1A1622',
     outlineStyle: 'none', resize: 'vertical', fontFamily: 'inherit',
     '::placeholder': { color: '#5E5560' }, ':focus': { ...shorthands.borderColor('#46529E') },
@@ -56,6 +61,7 @@ export const useStyles = makeStyles({
     backgroundColor: '#F4F4FB', color: '#1A1622', cursor: 'pointer',
     ...shorthands.borderStyle('solid'), ...shorthands.borderWidth('1px'), ...shorthands.borderColor('#E8E8F0'),
     ':hover': { backgroundColor: '#EBEBF5' },
+    [media.below.sm]: { minHeight: '44px' },
   },
   fileName: {
     fontSize: '13px', color: '#1A1622', flexGrow: 1,
@@ -66,6 +72,7 @@ export const useStyles = makeStyles({
     cursor: 'pointer', color: '#5E5560', fontSize: '13px', fontWeight: 500,
     padding: '4px 8px',
     ':hover': { color: '#EF4444' },
+    [media.below.sm]: { minHeight: '44px' },
   },
   cta: {
     width: '100%', padding: '12px 24px', borderRadius: '6px',
@@ -73,7 +80,14 @@ export const useStyles = makeStyles({
     fontSize: '14px', fontWeight: 600, color: '#FFFFFF', cursor: 'pointer',
     ':hover': { backgroundColor: '#6B7CCE' },
     ':disabled': { opacity: '0.6', cursor: 'not-allowed' },
+    [media.below.sm]: { minHeight: '44px' },
   },
   success: { fontSize: '15px', lineHeight: '24px', fontWeight: 400, color: '#15803D', textAlign: 'center' },
-  error: { fontSize: '13px', lineHeight: '20px', fontWeight: 400, color: '#EF4444', textAlign: 'center' },
+  error: { fontSize: '13px', lineHeight: '20px', fontWeight: 400, color: '#B91C1C', textAlign: 'center' },
+  srOnly: {
+    position: 'absolute', width: '1px', height: '1px',
+    ...shorthands.padding('0'), ...shorthands.margin('-1px'),
+    overflowX: 'hidden', overflowY: 'hidden',
+    clipPath: 'inset(50%)', whiteSpace: 'nowrap', ...shorthands.borderStyle('none'),
+  },
 });

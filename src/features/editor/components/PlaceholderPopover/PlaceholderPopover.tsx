@@ -13,12 +13,24 @@ interface PlaceholderPopoverProps {
   /** Names of existing text fields; confirming one of these asks the user
    *  to merge the selection into that field instead of creating a twin. */
   existingNames: string[];
+  /** The selected words as the field will hold them; shown in the phone sheet. */
+  selectedText: string;
+  /** Phone sheet: whether "Extend to next word" has a word to grow into. */
+  canExtend: boolean;
+  onExtend: () => void;
 }
 
 const HINT_KEY = 'veidne_rangeHintSeen';
 const mobileQuery = `(max-width: ${parseInt(veidneTokens.breakpoints.sm) - 1}px)`;
 
-export function PlaceholderPopover({ open, target, onConfirm, onClose, selectionState, existingNames }: PlaceholderPopoverProps) {
+// Clicks inside the naming UI must never reach the document area's root
+// onClick, which clears the selection and so closed this popover whenever the
+// name input itself was clicked or tapped. The desktop surface is portaled, but
+// React events still bubble through the React tree; the phone sheet sits inside
+// the document area.
+const contain = (e: React.SyntheticEvent) => e.stopPropagation();
+
+export function PlaceholderPopover({ open, target, onConfirm, onClose, selectionState, existingNames, selectedText, canExtend, onExtend }: PlaceholderPopoverProps) {
   const s = useStyles();
   const [name, setName] = useState('');
   const [shaking, setShaking] = useState(false);
@@ -73,12 +85,8 @@ export function PlaceholderPopover({ open, target, onConfirm, onClose, selection
   }, [name, onConfirm, existingNames]);
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => { if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); handleConfirm(); } }, [handleConfirm]);
 
-  const inputContent = mergeName !== null ? (
-    // The surface is portaled, but React events still bubble to the
-    // document area's root onClick, which clears the selection (closing this
-    // popover). Contain the merge step's clicks so Cancel can return to the
-    // name input.
-    <div onMouseDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}>
+  const mergeStep = mergeName !== null && (
+    <div>
       <div className={s.hint}>{t('placeholder.popover.mergeConfirm', { name: mergeName })}</div>
       <div className={s.mergeRow}>
         <button type="button" className={s.mergeBtn}
@@ -94,38 +102,56 @@ export function PlaceholderPopover({ open, target, onConfirm, onClose, selection
         </button>
       </div>
     </div>
-  ) : (
-    <>
-      <div className={s.inputRow}>
-        <Input
-          ref={inputRef}
-          className={shaking ? s.shakeInput : s.input}
-          style={shaking ? { borderColor: '#DC2626' } : undefined}
-          value={name}
-          onChange={(_, data) => setName(data.value)}
-          onKeyDown={handleKeyDown}
-          placeholder={t('placeholder.popover.namePlaceholder')}
-          aria-label={t('placeholder.popover.nameLabel')}
-          aria-describedby="field-name-hint"
-        />
-        <button type="button" className={s.confirmBtn} onClick={handleConfirm} aria-label={t('a11y.confirmPlaceholder')}>
-          <Checkmark16Regular />
-        </button>
-      </div>
-      <div id="field-name-hint" className={s.hint}>{t('placeholder.popover.nameHint')}</div>
-      {!hintDismissed && selectionState === 'oneWord' && (
-        <div className={s.hint}>{t('placeholder.popover.rangeHint')}</div>
-      )}
-    </>
   );
+
+  const nameRow = (
+    <div className={s.inputRow}>
+      <Input
+        ref={inputRef}
+        className={shaking ? s.shakeInput : s.input}
+        style={shaking ? { borderColor: '#DC2626' } : undefined}
+        value={name}
+        onChange={(_, data) => setName(data.value)}
+        onKeyDown={handleKeyDown}
+        placeholder={t('placeholder.popover.namePlaceholder')}
+        aria-label={t('placeholder.popover.nameLabel')}
+        aria-describedby="field-name-hint"
+      />
+      <button type="button" className={s.confirmBtn} onClick={handleConfirm} aria-label={t('a11y.confirmPlaceholder')}>
+        <Checkmark16Regular />
+      </button>
+    </div>
+  );
+
+  const showRangeHint = !hintDismissed && selectionState === 'oneWord';
 
   if (isMobile) {
     if (!open) return null;
+    // No backdrop: the document stays tappable while the sheet is open, so a
+    // second tap on a word extends the selection, as a second click does on
+    // desktop. Cancel takes over the backdrop's job of closing the sheet.
     return (
-      <>
-        <div className={s.backdrop} onClick={onClose} />
-        <div className={s.mobileSheet}>{inputContent}</div>
-      </>
+      <section className={s.mobileSheet} aria-label={t('placeholder.popover.sheetLabel')}
+        data-testid="field-sheet" onMouseDown={contain} onClick={contain}>
+        {mergeStep || (
+          <>
+            <p className={s.selected} data-testid="field-sheet-selected">
+              {t('placeholder.popover.selected', { text: selectedText })}
+            </p>
+            {nameRow}
+            <div className={s.sheetActions}>
+              <button type="button" className={s.sheetBtn} onClick={onExtend} disabled={!canExtend}>
+                {t('placeholder.popover.extend')}
+              </button>
+              <button type="button" className={s.sheetCancel} onClick={onClose}>
+                {t('placeholder.popover.cancel')}
+              </button>
+            </div>
+            <div id="field-name-hint" className={s.hint}>{t('placeholder.popover.nameHint')}</div>
+            {showRangeHint && <div className={s.hint}>{t('placeholder.popover.rangeHintTouch')}</div>}
+          </>
+        )}
+      </section>
     );
   }
 
@@ -135,8 +161,14 @@ export function PlaceholderPopover({ open, target, onConfirm, onClose, selection
       positioning={{ target: target, position: 'below', align: 'start' }}
       onOpenChange={(_, data) => { if (!data.open) onClose(); }}
     >
-      <PopoverSurface className={s.surface}>
-        {inputContent}
+      <PopoverSurface className={s.surface} onMouseDown={contain} onClick={contain}>
+        {mergeStep || (
+          <>
+            {nameRow}
+            <div id="field-name-hint" className={s.hint}>{t('placeholder.popover.nameHint')}</div>
+            {showRangeHint && <div className={s.hint}>{t('placeholder.popover.rangeHint')}</div>}
+          </>
+        )}
       </PopoverSurface>
     </Popover>
   );

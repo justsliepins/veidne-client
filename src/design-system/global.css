@@ -27,3 +27,16 @@ svg {
   max-width: 100%;
   height: auto;
 }
+
+/* iOS Safari zooms the page into any field whose text is smaller than 16px
+   when it takes focus (MOB-13). On phone widths, and on any touch screen (a
+   phone held sideways is wider than 640px), every text field uses 16px.
+   The :not() conditions give this rule more weight than a single Griffel
+   class, so no !important is needed. Zoom itself stays enabled. */
+@media (max-width: 639px), (pointer: coarse) {
+  input:not([type='checkbox']):not([type='radio']):not([type='file']):not([type='range']),
+  textarea:not([data-keep-font]),
+  select:not([data-keep-font]) {
+    font-size: 16px;
+  }
+}

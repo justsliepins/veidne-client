@@ -21,17 +21,28 @@ export const useStyles = makeStyles({
     },
     [media.below.md]: {
       position: 'fixed' as const,
-      // Sit below the completion bar so its Generate action stays clickable;
-      // the bar is raised above this sheet on mobile (see CompletionBar).
-      top: veidneTokens.layout.completionBarCompactHeight,
+      // Sit below the 56 px header and the completion bar, so the bar keeps
+      // Generate clickable and this panel's own header (Replace data, Back to
+      // Fields) is not hidden under the bar.
+      top: `calc(${veidneTokens.layoutMobile.navHeight} + ${veidneTokens.layout.completionBarCompactHeight})`,
       left: '0',
       right: '0',
-      height: ['calc(100vh - 54px)', 'calc(100dvh - 54px)'],
+      height: [
+        `calc(100vh - ${veidneTokens.layoutMobile.navHeight} - ${veidneTokens.layout.completionBarCompactHeight})`,
+        `calc(100dvh - ${veidneTokens.layoutMobile.navHeight} - ${veidneTokens.layout.completionBarCompactHeight})`,
+      ],
       width: '100%',
       zIndex: veidneTokens.zIndex.panel,
       borderLeftStyle: 'none',
       overscrollBehavior: 'contain',
       WebkitOverflowScrolling: 'touch',
+    },
+    [media.below.sm]: {
+      top: `calc(${veidneTokens.layoutMobile.navHeight} + ${veidneTokens.layoutMobile.completionBarHeight})`,
+      height: [
+        `calc(100vh - ${veidneTokens.layoutMobile.navHeight} - ${veidneTokens.layoutMobile.completionBarHeight})`,
+        `calc(100dvh - ${veidneTokens.layoutMobile.navHeight} - ${veidneTokens.layoutMobile.completionBarHeight})`,
+      ],
     },
   },
   header: {
@@ -45,12 +56,16 @@ export const useStyles = makeStyles({
     alignItems: 'center',
     justifyContent: 'space-between',
     flexShrink: 0,
+    [media.below.md]: { height: 'auto', minHeight: '56px', flexWrap: 'wrap', gap: '0 12px', ...shorthands.padding('4px', '16px') },
   },
   title: { fontSize: '15px', fontWeight: 600, color: '#1A1622' },
+  headerLinks: { display: 'flex', flexWrap: 'wrap', alignItems: 'center', columnGap: '12px' },
   backLink: {
     fontSize: '13px', color: '#46529E', cursor: 'pointer',
     backgroundColor: 'transparent', ...shorthands.borderStyle('none'), padding: '0',
     ':hover': { textDecorationLine: 'underline' },
+    ':focus-visible': { outlineWidth: '2px', outlineStyle: 'solid', outlineColor: '#5566C4', outlineOffset: '2px' },
+    [media.below.md]: { minHeight: '44px', fontSize: '14px' },
   },
   navigatorArea: { display: 'flex', justifyContent: 'center', padding: '12px 0' },
   formatsCard: { display: 'none', [media.below.md]: { display: 'block' } },
@@ -81,6 +96,7 @@ export const useStyles = makeStyles({
     transitionProperty: 'opacity, transform',
     transitionDuration: '500ms',
     transitionTimingFunction: 'ease',
+    '@media (prefers-reduced-motion: reduce)': { transitionProperty: 'none' },
   },
   panelHidden: {
     opacity: 0,

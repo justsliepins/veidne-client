@@ -13,7 +13,6 @@ import { DropZone } from '@/shared/components/DropZone';
 import { VeidneButton } from '@/shared/components/VeidneButton';
 import { ErrorToast } from '@/shared/components/ErrorToast';
 import { BugReportModal } from '@/features/bug-report/components/BugReportModal';
-import { TRUSTPILOT_REVIEW_URL } from '@/config/constants';
 import { useEditorStore } from '../../store/editorStore';
 import { useDataStore, type EditorPhase, type DataSubState } from '@/features/data/store/dataStore';
 import { useGeneratorStore } from '@/features/generator/store/generatorStore';
@@ -40,6 +39,9 @@ import { RegionalFormatBar } from '@/features/data/components/RegionalFormatBar'
 import type { RegionalColumns } from '@/features/data/utils/excelParser';
 import { TemplateUploadGuidance } from '../../components/TemplateUploadGuidance';
 import { GenerateProgressModal } from '@/features/generator/components/GenerateProgress';
+import { GenerateErrorPanel } from '@/features/generator/components/GenerateErrorPanel';
+import { describeGenerateFailure, type GenerateFailure } from '@/features/generator/utils/generateFailure';
+import { focusAfterDialog } from '@/shared/utils/focusAfterDialog';
 import { DoneView } from '@/features/generator/pages/Done';
 import { DownloadMenu } from '../../components/DownloadMenu';
 import { downloadTaggedTemplate } from '@/features/generator/utils/sourceFiles';
@@ -107,15 +109,27 @@ export function Editor() {
     () => typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches,
   );
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  // A failed generation is the one error that offers follow-ups: the private
-  // bug-report channel first, then the same review link every other surface
-  // uses, so the invitation does not depend on the outcome.
-  const [generateFailed, setGenerateFailed] = useState(false);
+  // A failed generation is shown in a panel at the top of the preview, not in
+  // the toast: it names the cause when known and offers the fix, the private
+  // bug-report channel, and the same review link every other surface uses.
+  const [generateError, setGenerateError] = useState<GenerateFailure | null>(null);
+  // Bumped on every failed run so the panel takes focus again.
+  const [generateAttempt, setGenerateAttempt] = useState(0);
   const [errorSticky, setErrorSticky] = useState(false);
+  // Below 768 px the preview panel covers the document column; the error panel
+  // and the template link then go inside it.
+  const [isNarrow, setIsNarrow] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches);
+  useEffect(() => {
+    const mql = window.matchMedia('(max-width: 767px)');
+    const handler = (e: MediaQueryListEvent) => setIsNarrow(e.matches);
+    mql.addEventListener('change', handler);
+    return () => mql.removeEventListener('change', handler);
+  }, []);
+  const generateBtnRef = useRef<HTMLButtonElement>(null);
   // The template whose failure already showed the review ask.
   const errorAskShownFor = useRef<ArrayBuffer | null>(null);
   const [bugReportOpen, setBugReportOpen] = useState(false);
-  const dismissError = useCallback(() => { setErrorMsg(null); setGenerateFailed(false); setErrorSticky(false); }, []);
+  const dismissError = useCallback(() => { setErrorMsg(null); setErrorSticky(false); }, []);
   // A refused template stays on screen with the reason until dismissed; any
   // other load failure is the short generic toast.
   const showDocumentLoadError = useCallback((e: unknown) => {
@@ -139,7 +153,15 @@ export function Editor() {
   // switch it to the "we found N" wording so it keeps teaching the click action.
   // The flow can change once after mount: a spreadsheet dropped at the upload
   // step switches to the data-first path the old start matrix offered.
-  const [flow, setFlow] = useState(() => searchParams.get('flow') ?? 'template-data');
+  // The demo and the finished example used to delete a saved project on
+  // arrival. With a project saved they first show the resume screen, which says
+  // what starting the sample does (review a, finding 3; review b, finding 5).
+  const [pendingSample, setPendingSample] = useState<{ flow: 'exploring' | 'instant'; src: string | null } | null>(() => {
+    const f = searchParams.get('flow');
+    if (f !== 'exploring' && f !== 'instant') return null;
+    return loadSession()?.rawDocxBase64 ? { flow: f, src: searchParams.get('src') } : null;
+  });
+  const [flow, setFlow] = useState(() => (pendingSample ? 'template-data' : searchParams.get('flow') ?? 'template-data'));
   const instantOpenedRef = useRef(false);
   // "Upload My Document" in the demo hands over to the person's own file: the
   // upload step of the normal flow, saved from then on. Without the flow
@@ -148,7 +170,10 @@ export function Editor() {
   const handleUploadMyDocument = useCallback(() => { uploadMyDocument(); setFlow('template-data'); }, [uploadMyDocument]);
   const [resumeSession, setResumeSession] = useState<SavedSession | null>(() => {
     const f = searchParams.get('flow');
-    if (f) return null;
+    if (f && !pendingSample) return null;
+    // Back in the same tab with the project still open (the stores keep it
+    // from page to page): the editor shows it as it is, with its real steps.
+    if (!pendingSample && useEditorStore.getState().rawDocxBytes !== null && useDataStore.getState().editorPhase !== 'upload') return null;
     const session = loadSession();
     return session?.rawDocxBase64 ? session : null;
   });
@@ -216,15 +241,44 @@ export function Editor() {
   }, []);
   const handleContinue = useCallback(() => {
     if (!resumeSession?.rawDocxBase64) return;
-    setResumeSession(null);
+    setResumeSession(null); setPendingSample(null);
+    // The spreadsheet and the column choices are never saved, so a project
+    // saved in the column dialog or while generating resumes in the preview,
+    // whose empty state says "Add your data" (review b, finding 12).
+    const needsRows = resumeSession.editorPhase === 'mapping' || resumeSession.editorPhase === 'generating';
     useEditorStore.getState().restoreSession(fromBase64(resumeSession.rawDocxBase64), resumeSession.sourceFileName, resumeSession.placeholders).then(() => {
       const ds = useDataStore.getState();
-      ds.setPhase(resumeSession.editorPhase as EditorPhase); ds.setDataSubState(resumeSession.dataSubState as DataSubState); ds.setKitDownloaded(resumeSession.kitDownloaded);
+      ds.setPhase((needsRows ? 'preview' : resumeSession.editorPhase) as EditorPhase);
+      ds.setDataSubState((needsRows ? 'preview' : resumeSession.dataSubState) as DataSubState);
+      ds.setKitDownloaded(resumeSession.kitDownloaded);
     });
     trackEvent('session_restored');
   }, [resumeSession]);
   const handleStartFresh = useCallback(() => { clearSession(); useEditorStore.getState().reset(); useDataStore.getState().reset(); setResumeSession(null); }, []);
-  const handleResumeFile = useCallback((file: File) => { clearSession(); setResumeSession(null); handleDocFile(file); }, [handleDocFile]);
+  // "Delete it and try the sample": the saved project goes, then the sample
+  // the person asked for starts, as it would have without a saved project.
+  const handleStartSample = useCallback(() => {
+    if (!pendingSample) return;
+    clearSession(); useEditorStore.getState().reset(); useDataStore.getState().reset();
+    setResumeSession(null); setPendingSample(null);
+    if (pendingSample.flow === 'exploring') {
+      setFlow('exploring'); startDemo(); trackEvent('demo_started');
+      // The save subscription of the normal flow is still on until this click
+      // has rendered, and startDemo just put the sample letter in the editor:
+      // drop that pending save, so the demo is never kept as the person's project.
+      clearSession();
+    } else {
+      loadInstantPreview();
+      trackEvent('instant_preview_opened', { source: pendingSample.src === 'matrix' ? 'start_matrix' : 'hero_mockup' });
+    }
+  }, [pendingSample, startDemo]);
+  // A file dropped on the resume screen starts over, routed like the start
+  // screen: a Word file to the fields step, a spreadsheet to the data-first path.
+  const handleResumeFile = useCallback((file: File) => {
+    clearSession(); setResumeSession(null);
+    if (/\.xlsx?$/i.test(file.name)) { useEditorStore.getState().reset(); useDataStore.getState().reset(); handleStartFile(file); }
+    else void handleDocFile(file);
+  }, [handleDocFile, handleStartFile]);
   const handleMatchDataTemplate = useCallback(async (file: File) => {
     try {
       await loadDocument(file);
@@ -238,6 +292,13 @@ export function Editor() {
   }, [setPhase]);
   useEffect(() => {
     useGeneratorStore.getState().reset(); useDemoStore.getState().reset();
+    // A sample link with a saved project: keep the project; the resume screen
+    // asks. A project still open in this tab is saved, so the editor starts
+    // from the resume screen as after a reload.
+    if (pendingSample) {
+      useEditorStore.getState().reset(); useDataStore.getState().reset();
+      setSearchParams({}, { replace: true }); return;
+    }
     const flow = searchParams.get('flow');
     if (flow) {
       clearSession(); useEditorStore.getState().reset(); useDataStore.getState().reset();
@@ -304,6 +365,10 @@ export function Editor() {
   useEffect(() => {
     if (editorPhase === 'done') clearSession();
   }, [editorPhase]);
+  // The failure panel belongs to the preview it happened on.
+  useEffect(() => {
+    if (editorPhase !== 'preview' && editorPhase !== 'generating') setGenerateError(null);
+  }, [editorPhase]);
   const handleUseMyFiles = useCallback(() => {
     trackEvent('instant_preview_swapped');
     clearSession();
@@ -331,6 +396,7 @@ export function Editor() {
   // why, so a blocked user shows up as a reason and not as an unmatched row.
   const handleGenerate = useCallback(async () => {
     trackEvent('generate_started', useDataStore.getState().isSampleData ? { sample: true } : undefined);
+    setGenerateError(null);
     if (!rawDocxBytes) { trackEvent('generate_failed', { path: 'no_document' }); return; }
     try { await generate(rawDocxBytes, placeholders, rows, columnMapping, fileName ?? 'document.docx'); }
     catch (e) {
@@ -340,8 +406,8 @@ export function Editor() {
         error: info?.id ?? (e instanceof Error ? e.name : 'unknown'),
         ...(info?.file ? { part: info.file } : {}),
       });
-      setErrorMsg(t('error.generate'));
-      setGenerateFailed(true);
+      setGenerateError(describeGenerateFailure(e, placeholders));
+      setGenerateAttempt((n) => n + 1);
       // One impression per template, however many times Generate is pressed.
       if (errorAskShownFor.current !== rawDocxBytes) {
         errorAskShownFor.current = rawDocxBytes;
@@ -396,27 +462,48 @@ export function Editor() {
   // template link to the left of Generate, then the button. Generate stays one
   // click with nothing in front of it. The link is hidden for sample data,
   // whose template is not the user's.
-  // While the failure toast is up the button is disabled: a failed run has
-  // already ended by the time the click handler resumes, so the store's
-  // in-flight guard cannot catch a retry, and the same template and data
-  // would fail the same way. Dismissing the toast re-enables it.
+  // Generate stays available while a failure panel is shown: the panel says
+  // what to change, and a retry after a change is the way out. The store's
+  // in-flight guard still keeps runs from overlapping.
+  // Below 768 px the step bar has no room for the template link next to
+  // Generate (it covered the step labels), so it moves into the preview panel.
+  const saveTemplate = !isSampleData && rawDocxBytes && placeholders.length > 0 && (
+    <button type="button" className={isNarrow ? s.saveTemplateLinkPanel : s.saveTemplateLink} onClick={() => downloadTaggedTemplate('generate')}>
+      {t('generate.saveTemplate')}
+    </button>
+  );
   const generateBtn = <div className={s.generateRow}>
-    {!isSampleData && rawDocxBytes && placeholders.length > 0 && (
-      <button type="button" className={s.saveTemplateLink} onClick={() => downloadTaggedTemplate('generate')}>
-        {t('generate.saveTemplate')}
-      </button>
-    )}
-    <button type="button" className={s.btnGenerate} onClick={handleGenerate} disabled={generateFailed}>
+    {!isNarrow && saveTemplate}
+    <button type="button" ref={generateBtnRef} className={s.btnGenerate} onClick={handleGenerate}>
       {t('generate.button')} <span className={s.countBadge}>{t('generate.count', { count: String(rows.length) })}</span>
     </button>
   </div>;
+  const errorPanel = generateError && (
+    <GenerateErrorPanel failure={generateError} attempt={generateAttempt}
+      onRetry={() => void handleGenerate()}
+      onGoToFields={() => setPhase('placeholders')}
+      onReport={() => setBugReportOpen(true)}
+      onDismiss={() => { setGenerateError(null); focusAfterDialog(() => generateBtnRef.current); }} />
+  );
+  // Notices at the top of the preview. Below 768 px the preview panel covers
+  // the document column, so they render at the top of that panel instead;
+  // otherwise the empty-field warning and the failure panel were hidden on phones.
+  const previewNotices = (
+    <>
+      {errorPanel}
+      {isSampleData && <SampleDataBanner onUseMyFiles={handleUseMyFiles} />}
+      <DataLoadedInfoBar beat={dataTransitionBeat} rowCount={rows.length}
+        fieldCount={filledFieldCount} onDismiss={dismissInfoBar}
+        emptyFields={isSampleData ? [] : emptyFieldNames} onChooseColumns={matchResult ? () => setPhase('mapping') : undefined} />
+    </>
+  );
   return (
     <PageLayout navVariant="light" editorNav showFooter={false} fillViewport>
       <PageSeo title={t('meta.editor.title')} description={t('meta.editor.description')} path="/editor" noindex />
       <div className={s.root}>
         {!isDone && <CompletionBar steps={steps} variant={isPreview ? 'compact' : 'standard'}
           leftAction={showDownload ? downloadMenu : undefined}
-          rightAction={isPreview && rows.length > 0 && (dataTransitionBeat === 0 || dataTransitionBeat >= 3) ? generateBtn : undefined} />}
+          rightAction={isPreview && rows.length > 0 ? generateBtn : undefined} />}
         <div className={mergeClasses(s.content, isPreview && s.contentCompact, isDone && s.contentDone)}
           style={editorPhase === 'placeholders' && placeholders.length > 0 ? { ['--forward-bar-inset' as string]: '78px' } : undefined}>
           {editorPhase === 'upload' && (flow === 'exploring' ? (
@@ -425,7 +512,8 @@ export function Editor() {
               <span className={s.demoLoadingLabel}>{t('demo.loading')}</span>
             </div>
           ) : resumeSession ? (
-            <ResumeScreen session={resumeSession} onContinue={handleContinue} onStartFresh={handleStartFresh} onFile={handleResumeFile} onFileError={handleFileError} />
+            <ResumeScreen session={resumeSession} onContinue={handleContinue} onStartFresh={pendingSample ? handleStartSample : handleStartFresh}
+              sample={pendingSample !== null} onFile={handleResumeFile} onFileError={handleFileError} />
           ) : (
             <div className={s.uploadWrapper}>
               <TemplateUploadGuidance />
@@ -480,12 +568,10 @@ export function Editor() {
           {isPreview && <div className={mergeClasses(s.documentWrapper, s.documentWrapperPreview)}>
             <div className={s.documentColumn}>
               {coaching}
-              {isSampleData && <SampleDataBanner onUseMyFiles={handleUseMyFiles} />}
-              <DataLoadedInfoBar beat={dataTransitionBeat} rowCount={rows.length}
-                fieldCount={filledFieldCount} onDismiss={dismissInfoBar}
-                emptyFields={isSampleData ? [] : emptyFieldNames} onChooseColumns={matchResult ? () => setPhase('mapping') : undefined} />
-              {/* Shown once the load transition is over, like the warning bar. */}
-              {rows.length > 0 && (regional.dates.length > 0 || regional.numbers.length > 0) && (dataTransitionBeat === 0 || dataTransitionBeat >= 4) && (
+              {!isNarrow && previewNotices}
+              {/* Shown once the load transition is over, like the warning bar. On
+                  phones the same line is a card inside the preview panel. */}
+              {!isNarrow && rows.length > 0 && (regional.dates.length > 0 || regional.numbers.length > 0) && (dataTransitionBeat === 0 || dataTransitionBeat >= 4) && (
                 <div className={s.formatsBar}>
                   <RegionalFormatBar regional={regional} value={formatConventions} onChange={setFormatConventions} />
                 </div>
@@ -493,7 +579,8 @@ export function Editor() {
               <DocumentArea previewMode getFilledValue={getFilledValue} transitionBeat={dataTransitionBeat} />
             </div>
             <PreviewPanel onBackToPlaceholders={() => setPhase('placeholders')}
-              onUploadData={() => { setPhase('excelUpload'); setDataSubState('upload'); }} transitionBeat={dataTransitionBeat} />
+              onUploadData={() => { setPhase('excelUpload'); setDataSubState('upload'); }} transitionBeat={dataTransitionBeat}
+              topSlot={isNarrow ? previewNotices : undefined} templateAction={isNarrow ? saveTemplate : undefined} />
           </div>}
           {isDone && <DoneView isDemo={flow === 'exploring'} />}
           {editorPhase === 'placeholders' && placeholders.length > 0 && (
@@ -506,23 +593,13 @@ export function Editor() {
         </div>
         {matchResult && <ColumnMappingModal key={matchResult.matched.map(m => m.column).join()} open={editorPhase === 'mapping'} matchResult={matchResult}
           rows={rows} placeholderNames={placeholders.map(p => p.name)}
-          onApply={applyMapping} onCancel={cancelMapping} onReupload={handleExcelFile}
+          onApply={(m) => { applyMapping(m); focusAfterDialog(() => generateBtnRef.current); }}
+          onCancel={cancelMapping} onReupload={handleExcelFile}
           onAddFields={() => setPhase('placeholders')}
           regional={regional} formats={formatConventions} onFormatsChange={setFormatConventions} appliedMapping={columnMapping} />}
         <PicturesModal />
-        <GenerateProgressModal open={isGenerating} onCancel={cancel} />
-        <ErrorToast message={errorMsg ?? ''} visible={!!errorMsg} onDismiss={dismissError} sticky={errorSticky}
-          actions={generateFailed && !!errorMsg && (
-            <>
-              <button type="button" className={s.errorActionBtn} onClick={() => setBugReportOpen(true)}>
-                {t('error.generate.report')}
-              </button>
-              <a className={s.errorActionLink} href={TRUSTPILOT_REVIEW_URL} target="_blank" rel="noopener noreferrer"
-                onClick={() => trackEvent('review_trustpilot_clicked', { source: 'error' })}>
-                {t('error.generate.review')}
-              </a>
-            </>
-          )} />
+        <GenerateProgressModal open={isGenerating} onCancel={() => { cancel(); focusAfterDialog(() => generateBtnRef.current); }} />
+        <ErrorToast message={errorMsg ?? ''} visible={!!errorMsg} onDismiss={dismissError} sticky={errorSticky} />
         <BugReportModal open={bugReportOpen} onClose={() => setBugReportOpen(false)} />
       </div>
     </PageLayout>

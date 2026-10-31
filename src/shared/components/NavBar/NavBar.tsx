@@ -171,7 +171,9 @@ export function NavBar({ variant = 'light', editor = false }: NavBarProps) {
           <button
             type="button"
             className={drawerLinkClass}
-            onClick={() => { openBugReport(); closeMenu(); }}
+            // Close the drawer first, so focus is back on Menu when the form
+            // opens: the form then returns focus there (review c, finding 6).
+            onClick={() => { closeMenu(); requestAnimationFrame(openBugReport); }}
           >
             {t('nav.reportBug')}
           </button>

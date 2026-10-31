@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { mergeClasses } from '@fluentui/react-components';
 import { t } from '@/i18n/i18n';
@@ -15,9 +16,15 @@ interface PreviewPanelProps {
   onBackToPlaceholders: () => void;
   onUploadData: () => void;
   transitionBeat?: number;
+  /** Below 768 px this panel covers the document column, so notices that sit
+   *  at the top of that column (the generation error) are passed in here. */
+  topSlot?: ReactNode;
+  /** Below 768 px: the "Save template (.docx)" link, which has no room in the
+   *  step bar there. */
+  templateAction?: ReactNode;
 }
 
-export function PreviewPanel({ onBackToPlaceholders, onUploadData, transitionBeat = 0 }: PreviewPanelProps) {
+export function PreviewPanel({ onBackToPlaceholders, onUploadData, transitionBeat = 0, topSlot, templateAction }: PreviewPanelProps) {
   const s = useStyles();
   const { wordTokens, placeholders } = useEditorStore(
     useShallow((s) => ({ wordTokens: s.wordTokens, placeholders: s.placeholders })),
@@ -35,9 +42,10 @@ export function PreviewPanel({ onBackToPlaceholders, onUploadData, transitionBea
     <div className={mergeClasses(s.root, s.fadeIn, isWaiting && s.panelHidden)}>
       <div className={s.header}>
         <span className={s.title}>{t('preview.title')}</span>
-        <span>
+        <span className={s.headerLinks}>
+          {templateAction}
           {hasData && (
-            <button type="button" className={s.backLink} style={{ marginRight: '12px' }} onClick={onUploadData}>
+            <button type="button" className={s.backLink} onClick={onUploadData}>
               {t('preview.replaceData')}
             </button>
           )}
@@ -46,6 +54,7 @@ export function PreviewPanel({ onBackToPlaceholders, onUploadData, transitionBea
           </button>
         </span>
       </div>
+      {topSlot}
       {hasData ? (
         <>
           <div className={s.navigatorArea}>

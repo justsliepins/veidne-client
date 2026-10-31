@@ -20,6 +20,9 @@ export const useStyles = makeStyles({
     overflowWrap: 'break-word',
     minHeight: '220px',
     justifyContent: 'center',
+    // Never squeezed by a flex column parent (the resume screen squeezed it to
+    // a 19 px "Browse files" button); the page scrolls instead.
+    flexShrink: 0,
     transitionProperty: 'border-color, background-color',
     transitionDuration: '0.15s',
     ':focus-visible': { outlineColor: '#5566C4', outlineWidth: '2px', outlineStyle: 'solid', outlineOffset: '2px' },

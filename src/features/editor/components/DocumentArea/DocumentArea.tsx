@@ -3,7 +3,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { Info16Regular } from '@fluentui/react-icons';
 import { t } from '@/i18n/i18n';
 import { useEditorStore } from '../../store/editorStore';
-import { getTokenRange, computePlaceholderCoverage, type TokenCoverage } from '../../store/editorHelpers';
+import { getTokenRange, getSelectedText, nextSelectableWordId, computePlaceholderCoverage, type TokenCoverage } from '../../store/editorHelpers';
 import { useDataStore } from '@/features/data/store/dataStore';
 import { useDemoStore, getDemoTargetTokens } from '@/features/demo/store/demoStore';
 import type { WordToken } from '../../utils/types';
@@ -141,14 +141,15 @@ function buildTableRows(cells: TableCell[]): TableRow[] {
 export function DocumentArea({ previewMode = false, getFilledValue, transitionBeat = 0 }: DocumentAreaProps) {
   const s = useStyles();
   const { wordTokens, placeholders, selectionState, firstClickTokenId, selectedTokenIds,
-    hoveredTokenId, clickWord, hoverWord, extendSelectionTo, clearHover, cancelSelection,
+    hoveredTokenId, clickWord, hoverWord, extendSelectionTo, extendSelectionToNextWord, clearHover, cancelSelection,
     createPlaceholder, renamePlaceholder, deletePlaceholder,
-    createImageField, removeImageFieldTag } = useEditorStore(
+    createImageField, removeImageFieldTag, lastActionResult } = useEditorStore(
     useShallow((s) => ({
       wordTokens: s.wordTokens, placeholders: s.placeholders, selectionState: s.selectionState,
       firstClickTokenId: s.firstClickTokenId, selectedTokenIds: s.selectedTokenIds,
       hoveredTokenId: s.hoveredTokenId,
       clickWord: s.clickWord, hoverWord: s.hoverWord, extendSelectionTo: s.extendSelectionTo,
+      extendSelectionToNextWord: s.extendSelectionToNextWord, lastActionResult: s.lastActionResult,
       clearHover: s.clearHover,
       cancelSelection: s.cancelSelection, createPlaceholder: s.createPlaceholder,
       renamePlaceholder: s.renamePlaceholder, deletePlaceholder: s.deletePlaceholder,
@@ -176,6 +177,13 @@ export function DocumentArea({ previewMode = false, getFilledValue, transitionBe
   // Committed (post-render) anchor element for the naming popover; see the effect
   // below for why it is deferred rather than read inline.
   const [popoverTarget, setPopoverTarget] = useState<HTMLSpanElement | null>(null);
+  // True while the current selection was made from the keyboard: when its
+  // naming popover closes (field created, Escape), focus goes back into the
+  // document instead of falling to <body> (WCAG 2.4.3).
+  const keyboardOpenedRef = useRef(false);
+  // The keyboard instructions become visible the first time a word takes
+  // keyboard focus; until then they are read by screen readers only.
+  const [showKeyHelp, setShowKeyHelp] = useState(false);
 
   // Roving tabindex over the focusable words. Focus moves imperatively so plain
   // arrow navigation never re-renders the document, only selection changes do.
@@ -225,6 +233,7 @@ export function DocumentArea({ previewMode = false, getFilledValue, transitionBe
   // resync so the next arrow key starts from where the user actually is.
   const handleWordFocus = useCallback((id: string) => {
     if (rovingIdRef.current !== id) setRovingTabIndex(id);
+    if (wordEls.current.get(id)?.matches(':focus-visible')) setShowKeyHelp(true);
   }, [setRovingTabIndex]);
 
   const handleDocKeyDown = (e: ReactKeyboardEvent<HTMLDivElement>) => {
@@ -240,6 +249,7 @@ export function DocumentArea({ previewMode = false, getFilledValue, transitionBe
       if (!targetId) return;
       e.preventDefault();
       if (e.shiftKey) {
+        keyboardOpenedRef.current = true;
         // Anchor at the current word the first time, then grow the run.
         if (selectionState === 'idle' && curId) clickWord(curId);
         focusWord(targetId);
@@ -256,6 +266,7 @@ export function DocumentArea({ previewMode = false, getFilledValue, transitionBe
       const curId = rovingIdRef.current;
       if (!curId) return;
       e.preventDefault();
+      keyboardOpenedRef.current = true;
       if (selectionState === 'idle') clickWord(curId);
       // Commit: let the naming popover open over the current selection.
       setKeyboardSelecting(false);
@@ -293,6 +304,7 @@ export function DocumentArea({ previewMode = false, getFilledValue, transitionBe
     const last = hitIds[hitIds.length - 1];
     // Reuse the existing range logic: anchor on the first word, then extend to
     // the last (a single-word highlight falls through to the oneWord state).
+    keyboardOpenedRef.current = false;
     cancelSelection();
     clickWord(first);
     if (last !== first) clickWord(last);
@@ -344,6 +356,35 @@ export function DocumentArea({ previewMode = false, getFilledValue, transitionBe
   useEffect(() => {
     setPopoverTarget(popoverOpen && lastSelectedId ? wordEls.current.get(lastSelectedId) ?? null : null);
   }, [popoverOpen, lastSelectedId]);
+
+  // Keyboard path: when the naming popover closes, the input that held focus is
+  // gone. Put focus on the roving word, which by then is the first plain word
+  // after the new field (or the word the user was on, after Escape).
+  const popoverWasOpen = useRef(false);
+  useEffect(() => {
+    if (popoverOpen) { popoverWasOpen.current = true; return; }
+    if (!popoverWasOpen.current) return;
+    popoverWasOpen.current = false;
+    if (!keyboardOpenedRef.current) return;
+    keyboardOpenedRef.current = false;
+    const raf = requestAnimationFrame(() => {
+      const active = document.activeElement;
+      if (active && active !== document.body) return;
+      const id = rovingIdRef.current;
+      if (id) focusWord(id);
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [popoverOpen, focusWord]);
+
+  // What a screen reader hears while choosing words: the current selection,
+  // then the field that was made from it (WCAG 4.1.3).
+  const selectedText = useMemo(() => getSelectedText(wordTokens, selectedTokenIds), [wordTokens, selectedTokenIds]);
+  const liveText = previewMode ? ''
+    : selectionState !== 'idle' && selectedText ? t('a11y.doc.selected', { text: selectedText })
+      : lastActionResult?.type === 'created' && lastActionResult.fieldKind !== 'image'
+        ? t(lastActionResult.occurrenceCount === 1 ? 'a11y.doc.created.one' : 'a11y.doc.created.many',
+          { name: lastActionResult.name, count: String(lastActionResult.occurrenceCount) })
+        : '';
 
   const wrapFormat = (node: ReactNode, token: WordToken): ReactNode => {
     let el = node;
@@ -457,7 +498,7 @@ export function DocumentArea({ previewMode = false, getFilledValue, transitionBe
           else wordEls.current.delete(token.id);
         }}
         onFocus={() => handleWordFocus(token.id)}
-        onMouseDown={() => { interactedRef.current = true; mouseDownRef.current = token.id; setKeyboardSelecting(false); }}
+        onMouseDown={() => { interactedRef.current = true; mouseDownRef.current = token.id; keyboardOpenedRef.current = false; setKeyboardSelecting(false); }}
         onMouseUp={() => {
           const d = mouseDownRef.current; mouseDownRef.current = null;
           if (d && d !== token.id) { clickWord(d); clickWord(token.id); }
@@ -547,6 +588,9 @@ export function DocumentArea({ previewMode = false, getFilledValue, transitionBe
 
   return (
     <div className={s.root} data-testid="document-area"
+      role={previewMode ? undefined : 'group'}
+      aria-label={previewMode ? undefined : t('a11y.doc.label')}
+      aria-describedby={previewMode ? undefined : 'doc-keyboard-help'}
       onKeyDown={previewMode ? undefined : handleDocKeyDown}
       onMouseUp={previewMode ? undefined : handleRootMouseUp}
       onClick={previewMode ? undefined : () => { if (!interactedRef.current) { cancelSelection(); setKeyboardSelecting(false); } interactedRef.current = false; }}>
@@ -556,6 +600,12 @@ export function DocumentArea({ previewMode = false, getFilledValue, transitionBe
           {t('editor.disclaimer')}
         </div>
       )}
+      {!previewMode && (
+        <p id="doc-keyboard-help" className={showKeyHelp ? s.keyHelp : s.srOnly} data-testid="doc-keyboard-help">
+          {t('editor.keyboardHelp')}
+        </p>
+      )}
+      {!previewMode && <div className={s.srOnly} role="status" data-testid="doc-live">{liveText}</div>}
       <DocumentPaper layout={pageLayout}>
         {docBlocks.map((block, i) => {
           switch (block.type) {
@@ -573,7 +623,11 @@ export function DocumentArea({ previewMode = false, getFilledValue, transitionBe
       {!previewMode && <PlaceholderPopover open={popoverOpen && popoverTarget !== null}
         target={popoverTarget}
         onConfirm={createPlaceholder} onClose={cancelSelection} selectionState={selectionState}
-        existingNames={placeholders.filter((p) => p.type !== 'image').map((p) => p.name)} />}
+        existingNames={placeholders.filter((p) => p.type !== 'image').map((p) => p.name)}
+        selectedText={selectedText}
+        canExtend={selectedTokenIds.length > 0
+          && nextSelectableWordId(wordTokens, phTokens, selectedTokenIds[selectedTokenIds.length - 1]) !== null}
+        onExtend={extendSelectionToNextWord} />}
       <ImageFieldDialog
         open={imageDialogToken !== null}
         existingFieldName={imageDialogToken ? imageFieldNameFromDescr(imageDialogToken.imageDescr) : null}

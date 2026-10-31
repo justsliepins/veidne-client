@@ -1,4 +1,5 @@
 import { makeStyles } from '@fluentui/react-components';
+import { media } from '@/design-system/responsive';
 
 export const useRoadmapCardStyles = makeStyles({
   card: {
@@ -16,6 +17,7 @@ export const useRoadmapCardStyles = makeStyles({
   description: { fontSize: '13px', lineHeight: '20px', fontWeight: 400, color: '#5E5560', overflowWrap: 'anywhere' as const },
   voteBtn: {
     minWidth: 'auto', height: '32px',
+    [media.below.sm]: { height: '44px' },
     paddingTop: '6px', paddingBottom: '6px', paddingLeft: '12px', paddingRight: '12px',
     borderRadius: '6px', fontSize: '13px', lineHeight: '20px', fontWeight: 600,
     color: '#FFFFFF', borderTopStyle: 'none', borderRightStyle: 'none',

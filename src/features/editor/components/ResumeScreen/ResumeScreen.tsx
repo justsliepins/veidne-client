@@ -2,6 +2,7 @@ import { DocumentTextRegular } from '@fluentui/react-icons';
 import { t } from '@/i18n/i18n';
 import { getPlaceholderColor } from '@/features/editor/utils/placeholderColors';
 import { DropZone } from '@/shared/components/DropZone';
+import { VeidneButton } from '@/shared/components/VeidneButton';
 import type { SavedSession } from '../../utils/sessionPersistence';
 import { useStyles } from './ResumeScreen.styles';
 
@@ -11,6 +12,9 @@ interface Props {
   onStartFresh: () => void;
   onFile: (file: File) => void;
   onFileError?: (err: { message: string }) => void;
+  /** Reached from the demo or the finished example: the second button starts
+   *  the sample, and a line says that this deletes the project. */
+  sample?: boolean;
 }
 
 function relativeTime(ts: number): string {
@@ -26,7 +30,7 @@ function relativeTime(ts: number): string {
   return t('resume.started.overMonth');
 }
 
-export function ResumeScreen({ session, onContinue, onStartFresh, onFile, onFileError }: Props) {
+export function ResumeScreen({ session, onContinue, onStartFresh, onFile, onFileError, sample }: Props) {
   const s = useStyles();
   const phs = session.placeholders as Array<{ name: string; colorIndex: number }>;
   return (
@@ -43,12 +47,15 @@ export function ResumeScreen({ session, onContinue, onStartFresh, onFile, onFile
         </div>
         <time className={s.timestamp} dateTime={new Date(session.savedAt).toISOString()}>{relativeTime(session.savedAt)}</time>
         <div className={s.actions}>
-          <button type="button" className={s.btnContinue} onClick={onContinue}>{t('resume.continue')}</button>
-          <button type="button" className={s.btnFresh} onClick={onStartFresh}>{t('resume.startFresh')}</button>
+          {/* The product's own primary and secondary buttons, as on every other step. */}
+          <VeidneButton appearance="primary" onClick={onContinue}>{t('resume.continue')}</VeidneButton>
+          <VeidneButton appearance="secondary" onClick={onStartFresh}>{t(sample ? 'resume.startSample' : 'resume.startFresh')}</VeidneButton>
         </div>
       </div>
+      {sample && <p className={s.sampleNote}>{t('resume.sampleNote')}</p>}
       <div className={s.dragHint}>{t('resume.dragNew')}</div>
-      <DropZone accept={['.docx']} onFile={onFile} onError={onFileError} titleKey="dropZone.title" subtitleKey="dropZone.subtitle" formatHintKey="dropZone.formats" />
+      {/* The same drop zone as the start screen: same formats, messages and privacy line. */}
+      <DropZone accept={['.docx', '.xlsx', '.xls']} onFile={onFile} onError={onFileError} titleKey="dropZone.title" subtitleKey="dropZone.subtitle" formatHintKey="dropZone.formats" wrongTypeKey="error.file.wrongType.start" tooLargeKey="error.file.tooLargeDoc" reassuranceKey="privacy.local" />
     </div>
   );
 }

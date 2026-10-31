@@ -178,8 +178,11 @@ export const useDataStore = create<DataState>((set, get) => ({
   applyMapping: (mapping) => {
     const effectiveRows = rowsWithMappedValues(get().rows, mapping);
     clearBeatTimer();
-    set({ columnMapping: mapping, rows: effectiveRows, mappingApplied: true, currentPreviewRow: 0, editorPhase: 'preview', dataTransitionBeat: 1, dataSubState: 'preview', namingConfig: defaultNamingConfig(mapping) });
-    scheduleBeat(set, 2, 800);
+    // The staged reveal (values fade in, then the side panel) is motion. With
+    // reduced motion asked for, the preview opens in its final state at once.
+    const reduce = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    set({ columnMapping: mapping, rows: effectiveRows, mappingApplied: true, currentPreviewRow: 0, editorPhase: 'preview', dataTransitionBeat: reduce ? 4 : 1, dataSubState: 'preview', namingConfig: defaultNamingConfig(mapping) });
+    if (!reduce) scheduleBeat(set, 2, 800);
     get().maybeRouteToPictures();
   },
 

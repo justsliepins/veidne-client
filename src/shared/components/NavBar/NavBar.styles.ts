@@ -45,7 +45,11 @@ export const useNavBarStyles = makeStyles({
   link: { textDecorationLine: 'none', fontSize: '15px', lineHeight: '24px', fontWeight: 400 },
   linkLight: { color: tokens.colorNeutralForeground2 },
   linkDark: { color: '#A1A1AA' },
-  linkBtn: { ...shorthands.borderStyle('none'), backgroundColor: 'transparent', padding: '0', cursor: 'pointer' },
+  linkBtn: {
+    ...shorthands.borderStyle('none'), backgroundColor: 'transparent', padding: '0', cursor: 'pointer',
+    // Phone: the editor header's only control sits at the top edge (MOB-02).
+    [media.below.sm]: { minHeight: '44px' },
+  },
 
   // Mobile hamburger — hidden at md+
   hamburger: {

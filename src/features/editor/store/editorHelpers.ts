@@ -33,6 +33,25 @@ export function getTokenRange(tokens: WordToken[], fromId: string, toId: string)
   return tokens.slice(Math.min(a, b), Math.max(a, b) + 1).map(t => t.id);
 }
 
+/** The word a selection can grow into after `lastId`, for "Extend to next
+ *  word" on touch screens. Spaces, line breaks and empty-paragraph fillers are
+ *  skipped, so the next paragraph counts, as it does for a click range. Growth
+ *  stops (null) at a word that already belongs to a field, at a picture, page
+ *  break or unsupported block, at a different table cell, and at the end. */
+export function nextSelectableWordId(tokens: WordToken[], claimed: Set<string>, lastId: string): string | null {
+  const i = tokens.findIndex(t => t.id === lastId);
+  if (i < 0) return null;
+  const last = tokens[i];
+  for (let j = i + 1; j < tokens.length; j++) {
+    const t = tokens[j];
+    if (t.type === 'space' || t.type === 'newline' || t.isEmptyParagraphFiller) continue;
+    if (t.type !== 'word' || claimed.has(t.id)) return null;
+    if (t.tableId !== last.tableId || t.cellRow !== last.cellRow || t.cellCol !== last.cellCol) return null;
+    return t.id;
+  }
+  return null;
+}
+
 export function getSelectedText(tokens: WordToken[], tokenIds: string[]): string {
   const ids = new Set(tokenIds);
   // Empty-paragraph fillers contribute zero text: their synthetic NBSP is

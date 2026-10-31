@@ -19,6 +19,7 @@ export const useStyles = makeStyles({
     transitionProperty: 'opacity, transform',
     transitionDuration: '400ms',
     transitionTimingFunction: 'ease',
+    '@media (prefers-reduced-motion: reduce)': { transitionProperty: 'none' },
     [media.below.sm]: {
       flexWrap: 'wrap' as const,
       justifyContent: 'center',

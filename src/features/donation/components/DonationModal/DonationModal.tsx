@@ -1,9 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { mergeClasses } from '@fluentui/react-components';
 import { Dismiss24Regular } from '@fluentui/react-icons';
 import { t } from '@/i18n/i18n';
 import { trackEvent } from '@/services/analyticsService';
 import { createDonationSession } from '@/services/donationService';
+import { parseWholeEuros } from '../../utils/amount';
+import { forgetDonateFromDone } from '../../utils/askMemory';
+import { useDialogFocus } from '@/shared/hooks/useDialogFocus';
 import { useStyles } from './DonationModal.styles';
 
 interface DonationModalProps {
@@ -15,6 +19,9 @@ interface DonationModalProps {
 // Same anchors as DonateInline (3, 5, 10 EUR), in cents.
 const PRESETS = [300, 500, 1000] as const;
 
+// The amount choice works like the Done screen card (DonateInline): the chosen
+// amount is a pressed button in a labelled group, "Custom" reveals a labelled
+// whole-euro field, and the button names the amount it will charge.
 export function DonationModal({ open, onClose, successUrl, cancelUrl, surface }: DonationModalProps) {
   const s = useStyles();
   const [selected, setSelected] = useState<number>(500);
@@ -22,20 +29,22 @@ export function DonationModal({ open, onClose, successUrl, cancelUrl, surface }:
   const [customValue, setCustomValue] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [customError, setCustomError] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-    document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
-  }, [open, onClose]);
+  useDialogFocus(open, cardRef, titleRef, onClose);
 
   if (!open) return null;
 
-  const amountCents = isCustom ? Math.round((parseFloat(customValue) || 0) * 100) : selected;
+  // The field keeps what was typed; only whole euros, 1 or more, are an amount
+  // (review a, finding 5). Spaces and "EUR" are ignored, a comma or dot is not.
+  const customEuros = parseWholeEuros(customValue);
+  const amountCents = isCustom ? (customEuros !== null ? customEuros * 100 : null) : selected;
 
   const handleSubmit = async () => {
-    if (amountCents < 100) { setError(t('donation.modal.error')); return; }
+    if (amountCents === null || loading) return;
     setError(''); setLoading(true);
     try {
       const { sessionUrl, livemode } = await createDonationSession({ amountCents, currency: 'EUR', successUrl, cancelUrl });
@@ -43,42 +52,71 @@ export function DonationModal({ open, onClose, successUrl, cancelUrl, surface }:
       // euros, with Stripe's live/test flag and the surface. A failed session
       // creation emits nothing.
       trackEvent('donation_initiated', { amount: String(amountCents / 100), livemode, surface });
+      // A same-tab checkout: the thank-you page must not mention another tab
+      // left open by an earlier checkout from the Done screen.
+      forgetDonateFromDone();
       window.location.href = sessionUrl;
     } catch { setError(t('donation.modal.error')); setLoading(false); }
   };
 
+  const chooseCustom = () => {
+    setIsCustom(true); setError('');
+    requestAnimationFrame(() => inputRef.current?.focus());
+  };
+
   const handleBackdrop = (e: React.MouseEvent) => { if (e.target === e.currentTarget) onClose(); };
 
-  return (
+  return createPortal(
     <div className={s.overlay} onClick={handleBackdrop}>
-      <div className={s.card} role="dialog" aria-modal="true" aria-labelledby="donation-modal-title">
+      <div ref={cardRef} className={s.card} role="dialog" aria-modal="true" aria-labelledby="donation-modal-title">
         <div className={s.titleRow}>
-          <div id="donation-modal-title" className={s.title}>{t('donation.modal.title')}</div>
+          <h2 id="donation-modal-title" ref={titleRef} tabIndex={-1} className={s.title}>{t('donation.modal.title')}</h2>
           <button type="button" className={s.closeBtn} onClick={onClose} aria-label={t('common.close')}><Dismiss24Regular /></button>
         </div>
         <div className={s.subtitle}>{t('donation.modal.subtitle')}</div>
-        <div className={s.amountGrid}>
-          {PRESETS.map(amt => (
-            <button key={amt} type="button"
-              className={mergeClasses(s.presetBtn, !isCustom && selected === amt && s.presetBtnSelected)}
-              onClick={() => { setIsCustom(false); setSelected(amt); setError(''); }}>
-              {t(`donation.modal.preset.${amt / 100}`)} {t('donation.currency')}
-            </button>
-          ))}
-          <button type="button"
+        <div className={s.amountGrid} role="group" aria-label={t('donate.inline.chooseLbl')}>
+          {PRESETS.map(amt => {
+            const active = !isCustom && selected === amt;
+            return (
+              <button key={amt} type="button" aria-pressed={active}
+                className={mergeClasses(s.presetBtn, active && s.presetBtnSelected)}
+                onClick={() => { setIsCustom(false); setSelected(amt); setError(''); }}>
+                {t(`donation.modal.preset.${amt / 100}`)} {t('donation.currency')}
+              </button>
+            );
+          })}
+          <button type="button" aria-pressed={isCustom}
             className={mergeClasses(s.presetBtn, isCustom && s.presetBtnSelected)}
-            onClick={() => { setIsCustom(true); setError(''); }}>
+            onClick={chooseCustom}>
             {t('donation.modal.custom')}
           </button>
         </div>
-        {isCustom && <input type="number" className={s.customInput} value={customValue}
-          placeholder={t('donation.modal.customPlaceholder')} min="1"
-          onChange={e => { setCustomValue(e.target.value); setError(''); }} />}
-        <button type="button" className={s.cta} disabled={loading} onClick={handleSubmit}>
-          {loading ? t('donation.modal.processing') : t('donation.modal.continue')}
+        {isCustom && (
+          <div className={s.customField}>
+            <label htmlFor="donation-modal-custom-amount" className={s.customLabel}>{t('donate.inline.customLbl')}</label>
+            <input id="donation-modal-custom-amount" ref={inputRef} type="text" inputMode="numeric"
+              autoComplete="off" className={s.customInput} value={customValue}
+              aria-describedby={customError ? 'donation-modal-custom-hint donation-modal-custom-error' : 'donation-modal-custom-hint'}
+              aria-invalid={customError || undefined}
+              onChange={e => { setCustomValue(e.target.value); setError(''); setCustomError(false); }}
+              onBlur={() => setCustomError(customValue.trim() !== '' && customEuros === null)}
+              onKeyDown={e => {
+                if (e.key !== 'Enter') return;
+                if (customEuros === null) setCustomError(true); else void handleSubmit();
+              }} />
+            <div id="donation-modal-custom-hint" className={s.customHint}>{t('donate.inline.customHint')}</div>
+            {customError && <div id="donation-modal-custom-error" className={s.error} role="alert">{t('donate.inline.customError')}</div>}
+          </div>
+        )}
+        <button type="button" className={s.cta} disabled={loading || amountCents === null} onClick={() => void handleSubmit()}>
+          {loading ? t('donation.modal.processing')
+            : amountCents === null ? t('donate.inline.ctaBare')
+              : t('donate.inline.cta', { amount: String(amountCents / 100) })}
         </button>
-        {error && <div className={s.error}>{error}</div>}
+        <p className={s.stripeNote}>{t('donation.modal.stripe')}</p>
+        {error && <div className={s.error} role="alert">{error}</div>}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

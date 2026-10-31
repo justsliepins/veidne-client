@@ -17,8 +17,9 @@ interface DataLoadedInfoBarProps {
 export function DataLoadedInfoBar({ beat, rowCount, fieldCount, onDismiss, emptyFields = [], onChooseColumns }: DataLoadedInfoBarProps) {
   const s = useStyles();
 
-  // Warning variant: not dismissable, shown once the load transition is over.
-  if (emptyFields.length > 0 && rowCount > 0 && (beat === 0 || beat >= 4)) {
+  // Warning variant: not dismissable. Shown from the first frame of the
+  // preview, because Generate is available from the first frame too.
+  if (emptyFields.length > 0 && rowCount > 0) {
     return (
       <div className={mergeClasses(s.root, s.visible, s.warn)} role="status">
         <span className={s.text}>

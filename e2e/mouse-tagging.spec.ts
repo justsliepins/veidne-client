@@ -85,3 +85,66 @@ test('mouse: dragging across words selects a phrase and creates a multi-word fie
   // Two words ("Anna", "Ozola") were consumed into the one chip.
   expect(await page.locator('[data-token-id]').count()).toBe(wordsBefore - 2);
 });
+
+test('mouse: clicking into the field name input keeps the popover open', async ({ page }) => {
+  await uploadPlain(page);
+
+  await page.getByText('Anna', { exact: true }).click();
+  const input = page.getByRole('textbox', { name: 'Field name' });
+  await expect(input).toBeVisible();
+  // The click used to bubble to the document area, which cleared the selection.
+  await input.click();
+  await expect(input).toBeVisible();
+  await input.fill('NAME');
+  await page.keyboard.press('Enter');
+  await expect(page.getByText(/Fields \(1\)/i)).toBeVisible();
+});
+
+// Phone: tap-then-tap ranges and "Extend to next word" (audit J4). The naming
+// sheet has no backdrop, so the document stays tappable while it is open.
+test.describe('touch on a phone', () => {
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+
+  test('touch: a second tap on another word extends the selection into one field', async ({ page }) => {
+    await uploadPlain(page);
+    const wordsBefore = await page.locator('[data-token-id]').count();
+
+    await page.getByText('Anna', { exact: true }).tap();
+    const sheet = page.getByTestId('field-sheet');
+    await expect(sheet).toBeVisible();
+    await expect(page.getByTestId('field-sheet-selected')).toHaveText('Selected: Anna');
+
+    await page.getByText('Ozola', { exact: true }).tap();
+    await expect(page.getByTestId('field-sheet-selected')).toHaveText('Selected: Anna Ozola');
+
+    // Tapping the input itself must not close the sheet.
+    const input = page.getByRole('textbox', { name: 'Field name' });
+    await input.tap();
+    await expect(sheet).toBeVisible();
+    await expect(input).toHaveCSS('font-size', '16px');
+    await input.fill('FULLNAME');
+    await page.keyboard.press('Enter');
+
+    await expect(sheet).toHaveCount(0);
+    await expect(page.getByText('FULLNAME', { exact: true }).first()).toBeVisible();
+    expect(await page.locator('[data-token-id]').count()).toBe(wordsBefore - 2);
+  });
+
+  test('touch: Extend to next word grows the selection one word at a time, and Cancel closes', async ({ page }) => {
+    await uploadPlain(page);
+
+    await page.getByText('the', { exact: true }).tap();
+    const extend = page.getByRole('button', { name: 'Extend to next word' });
+    const box = await extend.boundingBox();
+    expect(box!.height).toBeGreaterThanOrEqual(44);
+    await extend.tap();
+    await extend.tap();
+    await expect(page.getByTestId('field-sheet-selected')).toHaveText('Selected: the annual program');
+    // "program" is the last word of the document: nothing left to extend into.
+    await expect(extend).toBeDisabled();
+
+    await page.getByRole('button', { name: 'Cancel' }).tap();
+    await expect(page.getByTestId('field-sheet')).toHaveCount(0);
+    await expect(page.getByText(/Fields \(0\)/i)).toBeAttached();
+  });
+});

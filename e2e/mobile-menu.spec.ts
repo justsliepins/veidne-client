@@ -48,4 +48,16 @@ test.describe('mobile menu keyboard path', () => {
     await expect(page.locator('#root')).not.toHaveAttribute('inert', '');
     await expect(menu).toBeFocused();
   });
+
+  test('Report a bug from the menu gives focus back to Menu when the form closes', async ({ page }) => {
+    await page.goto(`${BASE}/`);
+    const menu = page.getByRole('button', { name: 'Menu', exact: true });
+    await menu.click();
+    await page.locator('#mobile-menu').getByRole('button', { name: 'Report a bug' }).click();
+    const form = page.getByRole('dialog', { name: 'Report a Bug' });
+    await expect(form).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(form).toHaveCount(0);
+    await expect(menu).toBeFocused();
+  });
 });

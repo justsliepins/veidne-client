@@ -130,3 +130,76 @@ test('a large document stays responsive under arrow navigation', async ({ page }
   await page.keyboard.press('Enter');
   await expect(page.getByRole('textbox')).toBeVisible();
 });
+
+// Audit J16: what a keyboard or screen reader user gets around field creation.
+test('the document is a labelled group that points to visible keyboard instructions', async ({ page }) => {
+  await uploadDoc(page, ['Dear customer thank you']);
+
+  const doc = page.getByRole('group', { name: 'Your document' });
+  await expect(doc).toHaveAttribute('aria-describedby', 'doc-keyboard-help');
+  const help = page.locator('#doc-keyboard-help');
+  await expect(help).toHaveText(
+    'Keyboard: arrow keys move between words. Shift with an arrow key selects more words. Enter names the field.');
+  // Shown on screen once a word has keyboard focus.
+  await page.keyboard.press('Tab');
+  await roving(page).focus();
+  await page.keyboard.press('ArrowRight');
+  await expect(help).toBeVisible();
+  expect((await help.boundingBox())!.height).toBeGreaterThan(10);
+});
+
+test('the selection and the new field are announced, and focus returns to the next word', async ({ page }) => {
+  await uploadDoc(page, ['Dear customer thank you']);
+
+  await roving(page).focus();
+  await page.keyboard.down('Shift');
+  await page.keyboard.press('ArrowRight');
+  await page.keyboard.up('Shift');
+  await expect(page.getByTestId('doc-live')).toHaveText('Selected: Dear customer');
+
+  await page.keyboard.press('Enter');
+  await page.getByRole('textbox', { name: 'Field name' }).fill('PHRASE');
+  await page.keyboard.press('Enter');
+
+  await expect(page.getByTestId('doc-live')).toHaveText('Field PHRASE created.');
+  // Not <body>: the first plain word after the new field, ready for the next one.
+  await expect.poll(() => activeText(page)).toBe('thank');
+});
+
+test('Escape in the field name input returns focus to the word', async ({ page }) => {
+  await uploadDoc(page, ['Dear customer thank you']);
+
+  await roving(page).focus();
+  await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('textbox', { name: 'Field name' })).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('textbox', { name: 'Field name' })).toHaveCount(0);
+  await expect.poll(() => activeText(page)).toBe('customer');
+});
+
+test.describe('on a phone', () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+
+  // WCAG 2.4.11: below 768 px the fields step has a fixed forward bar and the
+  // docked field list at the bottom. A word reached with the arrow keys must
+  // not end up hidden under them.
+  test('a word focused with the arrow keys is scrolled clear of the bars at the bottom', async ({ page }) => {
+    const paras = Array.from({ length: 60 }, (_, i) => `Line ${i} alpha beta gamma`);
+    await uploadDoc(page, paras);
+    await roving(page).focus();
+    await page.keyboard.press('Enter');
+    await page.getByRole('textbox').fill('FIRST');
+    await page.keyboard.press('Enter');
+    const forward = page.locator('button', { hasText: 'Add your data' }).last();
+    await expect(forward).toBeVisible();
+
+    await roving(page).focus();
+    for (let i = 0; i < 90; i++) await page.keyboard.press('ArrowRight');
+    const word = await page.evaluate(() => document.activeElement?.getBoundingClientRect().bottom ?? 0);
+    const barTop = (await forward.boundingBox())!.y;
+    expect(word).toBeGreaterThan(0);
+    // The forward bar's button sits inside the bar; the field list is above it.
+    expect(word).toBeLessThanOrEqual(barTop - 40);
+  });
+});

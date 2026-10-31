@@ -18,6 +18,9 @@ export const useStyles = makeStyles({
       overscrollBehavior: 'contain',
       WebkitOverflowScrolling: 'touch',
       paddingLeft: '8px', paddingRight: '8px', paddingTop: '12px', paddingBottom: '80px',
+      // A word focused with the arrow keys is scrolled clear of the forward bar
+      // and the docked field list, not under them (WCAG 2.4.11).
+      scrollPaddingBottom: 'calc(var(--forward-bar-inset, 0px) + 64px)',
     },
   },
   disclaimer: {
@@ -30,6 +33,16 @@ export const useStyles = makeStyles({
     ...shorthands.borderStyle('solid'), ...shorthands.borderWidth('1px'), ...shorthands.borderColor('rgba(26, 22, 34, 0.06)'),
   },
   disclaimerIcon: { fontSize: '16px', color: '#767077', flexShrink: 0 },
+  // Keyboard instructions, shown once a word has keyboard focus.
+  keyHelp: {
+    marginTop: '0', marginBottom: '0', maxWidth: '640px', textAlign: 'center',
+    fontSize: '13px', lineHeight: '20px', color: '#46414A',
+  },
+  // Read by screen readers, not shown. Out of flow, so it adds no flex gap.
+  srOnly: {
+    position: 'absolute', width: '1px', height: '1px', ...shorthands.overflow('hidden'),
+    clipPath: 'inset(50%)', whiteSpace: 'nowrap', ...shorthands.margin('-1px'), ...shorthands.padding('0'),
+  },
   h1: { fontSize: '24px', fontWeight: 700, ...shorthands.margin('24px', '0', '12px', '0'), lineHeight: '32px' },
   h2: { fontSize: '20px', fontWeight: 600, ...shorthands.margin('20px', '0', '10px', '0'), lineHeight: '28px' },
   h3: { fontSize: '17px', fontWeight: 600, ...shorthands.margin('16px', '0', '8px', '0'), lineHeight: '24px' },

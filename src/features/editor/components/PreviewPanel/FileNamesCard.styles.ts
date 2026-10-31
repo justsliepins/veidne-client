@@ -1,5 +1,6 @@
 import { makeStyles, shorthands } from '@fluentui/react-components';
 import { veidneTokens } from '@/design-system/tokens';
+import { media } from '@/design-system/responsive';
 
 const PERIWINKLE_INK = '#46529E';
 const BORDER = '#E8E8F0';
@@ -20,7 +21,7 @@ export const useStyles = makeStyles({
   title: { fontSize: '14px', fontWeight: 600, color: '#1A1622' },
   label: { fontSize: '12px', fontWeight: 600, color: '#5E5560' },
   field: { display: 'flex', flexDirection: 'column', gap: '4px' },
-  dropdown: { width: '100%', minWidth: '0' },
+  dropdown: { width: '100%', minWidth: '0', [media.below.md]: { minHeight: '44px' } },
 
   advancedToggle: {
     alignSelf: 'flex-start',
@@ -36,6 +37,7 @@ export const useStyles = makeStyles({
     cursor: 'pointer',
     ':hover': { textDecorationLine: 'underline' },
     ':focus-visible': { outlineWidth: '2px', outlineStyle: 'solid', outlineColor: '#5566C4', outlineOffset: '2px' },
+    [media.below.md]: { minHeight: '44px' },
   },
   chev: {
     transitionProperty: 'transform',

@@ -69,6 +69,7 @@ export const useStyles = makeStyles({
     cursor: 'pointer',
     ':hover': { color: '#3B3E8F' },
     ':focus-visible': { outlineWidth: '2px', outlineStyle: 'solid', outlineColor: '#5566C4', outlineOffset: '2px' },
+    [media.below.sm]: { display: 'inline-flex', alignItems: 'center', minHeight: '44px' },
   },
   downloadBtn: {
     display: 'inline-flex',
@@ -86,6 +87,7 @@ export const useStyles = makeStyles({
     cursor: 'pointer',
     alignSelf: 'flex-start',
     ':hover': { backgroundColor: '#F0F0FA' },
+    [media.below.sm]: { minHeight: '44px' },
   },
   savedNote: {
     fontSize: '12px',

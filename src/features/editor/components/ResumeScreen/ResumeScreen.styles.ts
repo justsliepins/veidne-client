@@ -14,9 +14,9 @@ export const useStyles = makeStyles({
   fileName: { fontSize: '14px', lineHeight: '20px', fontWeight: 500, color: '#1A1622', display: 'flex', alignItems: 'center', ...shorthands.gap('6px'), marginBottom: '8px' },
   fields: { fontSize: '13px', lineHeight: '20px', fontWeight: 400, color: '#6B7280', display: 'flex', flexWrap: 'wrap', alignItems: 'center', ...shorthands.gap('4px'), marginBottom: '4px' },
   chip: { fontSize: '11px', lineHeight: '16px', fontWeight: 500, ...shorthands.padding('1px', '6px'), ...shorthands.borderRadius('4px'), whiteSpace: 'nowrap' as const },
-  timestamp: { fontSize: '13px', lineHeight: '20px', fontWeight: 400, color: '#6B7280', marginBottom: '20px' },
-  actions: { display: 'flex', ...shorthands.gap('12px') },
-  btnContinue: { ...shorthands.padding('8px', '20px'), ...shorthands.borderRadius('8px'), ...shorthands.borderStyle('none'), backgroundColor: '#7C3AED', color: '#fff', fontWeight: 600, fontSize: '14px', cursor: 'pointer', ':focus-visible': { outlineColor: '#7C3AED', outlineWidth: '2px', outlineStyle: 'solid', outlineOffset: '2px' } },
-  btnFresh: { ...shorthands.padding('8px', '20px'), ...shorthands.borderRadius('8px'), ...shorthands.border('1px', 'solid', '#D1D5DB'), backgroundColor: 'transparent', color: '#4B5563', fontWeight: 600, fontSize: '14px', cursor: 'pointer', ':focus-visible': { outlineColor: '#7C3AED', outlineWidth: '2px', outlineStyle: 'solid', outlineOffset: '2px' } },
+  // Block, so the 20 px gap above the buttons applies (a <time> is inline).
+  timestamp: { display: 'block', fontSize: '13px', lineHeight: '20px', fontWeight: 400, color: '#6B7280', marginBottom: '20px' },
+  actions: { display: 'flex', flexWrap: 'wrap', ...shorthands.gap('12px') },
   dragHint: { fontSize: '13px', color: '#6B7280', marginTop: '8px' },
+  sampleNote: { margin: '0', fontSize: '14px', lineHeight: '20px', fontWeight: 500, color: '#3F3A46', textAlign: 'center' },
 });

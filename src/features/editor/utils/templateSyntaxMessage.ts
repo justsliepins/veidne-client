@@ -1,7 +1,7 @@
 import { t } from '@/i18n/i18n';
 import type { TemplateErrorInfo } from '@/features/generator/utils/documentGenerator';
 
-function partName(file: string): string {
+export function partName(file: string): string {
   if (/^word\/document\.xml$/.test(file)) return t('error.template.part.body');
   if (/^word\/header\d*\.xml$/.test(file)) return t('error.template.part.header');
   if (/^word\/footer\d*\.xml$/.test(file)) return t('error.template.part.footer');
