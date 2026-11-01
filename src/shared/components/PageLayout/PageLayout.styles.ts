@@ -8,6 +8,9 @@ export const usePageLayoutStyles = makeStyles({
     // svh tracks the small viewport; the 100vh line is the old-browser fallback.
     minHeight: ['100vh', '100svh'],
     overflowX: 'hidden',
+    // Room for the cookie banner while it is shown (ConsentBanner), so the
+    // end of the page and the editor's bottom bar are never under it.
+    paddingBottom: 'var(--consent-banner-h, 0px)',
   },
   // dvh follows the dynamic viewport (URL bar show/hide) with a 100vh fallback.
   rootConstrained: { height: ['100vh', '100dvh'], minHeight: '0', overflow: 'hidden' },

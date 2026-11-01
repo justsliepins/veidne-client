@@ -52,7 +52,7 @@ const KNOWN_EVENTS = new Set([
   'session_restored', 'bug_report_submitted', 'pdf_started', 'pdf_generated',
   'image_field_created', 'images_added', 'image_match',
   'review_g2_clicked', 'review_trustpilot_clicked', 'review_line_clicked',
-  'download_modal_shown', 'donation_ask_shown', 'review_ask_shown',
+  'download_modal_shown', 'donation_ask_shown', 'review_ask_shown', 'consent_choice',
 ]);
 
 function sameOrigin(url: string): boolean {

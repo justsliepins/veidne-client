@@ -30,8 +30,9 @@ export const useStyles = makeStyles({
       left: '0',
       right: '0',
       // Rise above the soft keyboard when a field is being renamed inline,
-      // and above the fixed forward bar when the Editor renders one.
-      bottom: 'calc(var(--kb-inset, 0px) + var(--forward-bar-inset, 0px))',
+      // and above the fixed forward bar when the Editor renders one, and above
+      // the cookie banner while it is shown (WP14).
+      bottom: 'calc(var(--kb-inset, 0px) + var(--forward-bar-inset, 0px) + var(--consent-banner-h, 0px))',
       top: 'auto',
       width: '100%',
       height: 'auto',

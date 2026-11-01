@@ -44,7 +44,7 @@ async function fetchTemplateApi<T>(path: string, read: (res: Response) => Promis
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TEMPLATE_API_TIMEOUT_MS);
   try {
-    const res = await fetch(`${API_BASE_URL}${path}`, { credentials: 'include', signal: controller.signal });
+    const res = await fetch(`${API_BASE_URL}${path}`, { credentials: 'omit', signal: controller.signal });
     return await read(res);
   } finally {
     clearTimeout(timer);

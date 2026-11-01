@@ -21,6 +21,7 @@ export const useStyles = makeStyles({
     },
     [media.below.md]: {
       position: 'fixed' as const,
+      // Its height leaves room for the cookie banner while it is shown (WP14).
       // Sit below the 56 px header and the completion bar, so the bar keeps
       // Generate clickable and this panel's own header (Replace data, Back to
       // Fields) is not hidden under the bar.
@@ -28,8 +29,8 @@ export const useStyles = makeStyles({
       left: '0',
       right: '0',
       height: [
-        `calc(100vh - ${veidneTokens.layoutMobile.navHeight} - ${veidneTokens.layout.completionBarCompactHeight})`,
-        `calc(100dvh - ${veidneTokens.layoutMobile.navHeight} - ${veidneTokens.layout.completionBarCompactHeight})`,
+        `calc(100vh - ${veidneTokens.layoutMobile.navHeight} - ${veidneTokens.layout.completionBarCompactHeight} - var(--consent-banner-h, 0px))`,
+        `calc(100dvh - ${veidneTokens.layoutMobile.navHeight} - ${veidneTokens.layout.completionBarCompactHeight} - var(--consent-banner-h, 0px))`,
       ],
       width: '100%',
       zIndex: veidneTokens.zIndex.panel,
@@ -40,8 +41,8 @@ export const useStyles = makeStyles({
     [media.below.sm]: {
       top: `calc(${veidneTokens.layoutMobile.navHeight} + ${veidneTokens.layoutMobile.completionBarHeight})`,
       height: [
-        `calc(100vh - ${veidneTokens.layoutMobile.navHeight} - ${veidneTokens.layoutMobile.completionBarHeight})`,
-        `calc(100dvh - ${veidneTokens.layoutMobile.navHeight} - ${veidneTokens.layoutMobile.completionBarHeight})`,
+        `calc(100vh - ${veidneTokens.layoutMobile.navHeight} - ${veidneTokens.layoutMobile.completionBarHeight} - var(--consent-banner-h, 0px))`,
+        `calc(100dvh - ${veidneTokens.layoutMobile.navHeight} - ${veidneTokens.layoutMobile.completionBarHeight} - var(--consent-banner-h, 0px))`,
       ],
     },
   },

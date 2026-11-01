@@ -152,7 +152,8 @@ export const useStyles = makeStyles({
     [media.below.md]: {
       display: 'block',
       position: 'fixed',
-      bottom: 0,
+      // Above the cookie banner while it is shown (WP14).
+      bottom: 'var(--consent-banner-h, 0px)',
       left: 0,
       right: 0,
       zIndex: 200,

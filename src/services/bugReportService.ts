@@ -16,7 +16,7 @@ export async function submitBugReport(req: BugReportRequest): Promise<void> {
 
   const res = await fetch(`${API_BASE_URL}/bug-report`, {
     method: 'POST',
-    credentials: 'include',
+    credentials: 'omit',
     body: formData,
   });
 

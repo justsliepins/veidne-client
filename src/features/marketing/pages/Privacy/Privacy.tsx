@@ -2,18 +2,19 @@ import { LegalPage, type LegalSection } from '@/features/marketing/components/Le
 import { useLegalPageStyles } from '@/features/marketing/components/LegalPage/LegalPage.styles';
 import { useTranslation } from '@/i18n/useTranslation';
 import { operatorParams } from '@/shared/utils/operator';
+import { useConsentStore } from '@/features/consent/consentStore';
 
 const SOURCE_URL = 'https://github.com/justsliepins/veidne-client';
 const SUMMARY_ROWS = ['r1', 'r2', 'r3', 'r4', 'r5'] as const;
 /** Every localStorage key the client writes (see the spec's data-flow inventory). */
 const STORAGE_ROWS = [
-  { name: 'veidne_first_touch', what: 'firstTouch', kept: 'untilCleared' },
+  { name: 'veidne_consent', what: 'consent', kept: 'consentKept' },
+  { name: 'veidne_first_touch', what: 'firstTouch', kept: 'withConsent' },
   { name: 'veidne_session', what: 'session', kept: 'sessionKept' },
   { name: 'veidne_formatConventions', what: 'formatConventions', kept: 'untilCleared' },
   { name: 'veidne.pdfConsent', what: 'pdfConsent', kept: 'untilCleared' },
   { name: 'veidne_field_nudge_seen', what: 'nudge', kept: 'untilCleared' },
   { name: 'veidne_rangeHintSeen', what: 'rangeHint', kept: 'untilCleared' },
-  { name: 'veidne_generatedTotal', what: 'generatedTotal', kept: 'untilCleared' },
   { name: 'veidne_donatedAt', what: 'donatedAt', kept: 'untilCleared' },
   { name: 'veidne_askDeclinedAt', what: 'declinedAt', kept: 'untilCleared' },
   { name: 'veidne_donateFrom', what: 'donateFrom', kept: 'untilCleared' },
@@ -31,6 +32,14 @@ export function Privacy() {
   const params = operatorParams();
   const tx = (key: string) => { const value = t(key, params); texts.push(value); return value; };
   const p = (key: string) => <p className={s.p}>{tx(key)}</p>;
+  // The current cookie choice exists only in the browser: the prerendered
+  // page has no line here, and the line updates (and is announced) when the
+  // choice changes. The button opens the cookie banner again (CTA-27).
+  const consentChoice = useConsentStore((st) => st.choice);
+  const reopenConsent = useConsentStore((st) => st.reopen);
+  const choiceKey = consentChoice === 'granted' ? 'privacyNotice.cookies.choiceGranted'
+    : consentChoice === 'denied' ? 'privacyNotice.cookies.choiceDenied' : 'privacyNotice.cookies.choiceNone';
+  const inBrowser = typeof window !== 'undefined';
 
   const sections: LegalSection[] = [
     {
@@ -114,6 +123,10 @@ export function Privacy() {
           {p('privacyNotice.cookies.logs')}
           {p('privacyNotice.cookies.basis')}
           {p('privacyNotice.cookies.refuse')}
+          <div className={s.consentRow}>
+            <p className={s.p} role="status">{inBrowser ? tx(choiceKey) : ''}</p>
+            <button type="button" className={s.consentButton} onClick={reopenConsent}>{tx('privacyNotice.cookies.change')}</button>
+          </div>
         </>
       ),
     },

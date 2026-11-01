@@ -13,7 +13,7 @@ export interface CheckoutSession {
 
 export async function createDonationSession(req: CreateSessionRequest): Promise<CheckoutSession> {
   const res = await fetch(`${API_BASE_URL}/donations/create-session`, {
-    method: 'POST', credentials: 'include',
+    method: 'POST', credentials: 'omit',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(req),
   });
@@ -31,7 +31,7 @@ export interface DonationSession {
  *  does not know the id (404); throws on any other failure. */
 export async function getDonationSession(sessionId: string): Promise<DonationSession | null> {
   const res = await fetch(`${API_BASE_URL}/donations/session/${encodeURIComponent(sessionId)}`, {
-    credentials: 'include',
+    credentials: 'omit',
   });
   if (res.status === 404) return null;
   if (!res.ok) throw new Error(`GET /donations/session failed: ${res.status}`);

@@ -42,8 +42,8 @@ for (const [path, title, h1] of [
 
 test('the privacy notice lists every localStorage key the client writes', async ({ page }) => {
   await page.goto(`${BASE}/privacy`);
-  for (const key of ['veidne_first_touch', 'veidne_session', 'veidne_formatConventions', 'veidne.pdfConsent', 'veidne_field_nudge_seen',
-    'veidne_rangeHintSeen', 'veidne_generatedTotal', 'veidne_donatedAt', 'veidne_askDeclinedAt', 'veidne_donateFrom']) {
+  for (const key of ['veidne_consent', 'veidne_first_touch', 'veidne_session', 'veidne_formatConventions', 'veidne.pdfConsent', 'veidne_field_nudge_seen',
+    'veidne_rangeHintSeen', 'veidne_donatedAt', 'veidne_askDeclinedAt', 'veidne_donateFrom']) {
     await expect(page.locator('section[aria-labelledby="storage"] table').getByText(key, { exact: true })).toBeVisible();
   }
 });

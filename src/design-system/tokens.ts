@@ -59,6 +59,8 @@ export const veidneTokens = {
     dockedBar: 200,
     nudge: 250,
     panel: 500,
+    // The cookie banner: over the page and its docked bars, under every dialog.
+    consent: 700,
     backdrop: 800,
     modal: 900,
     lightbox: 1000,

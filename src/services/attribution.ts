@@ -39,6 +39,30 @@ function readUtms(): FirstTouchAttribution {
   return out;
 }
 
+// Where this page load came from, read once from the page the visitor
+// arrived on: later in-app navigations drop the campaign tags from the
+// address, so a first touch captured after a late consent still gets them.
+let arrival: FirstTouchAttribution | null = null;
+function arrivalSnapshot(): FirstTouchAttribution {
+  if (arrival === null) {
+    arrival = { ...readUtms() };
+    const referrerHost = readReferrerHost();
+    if (referrerHost) arrival.referrerHost = referrerHost;
+  }
+  return arrival;
+}
+
+// Without consent for statistics (work package 14) nothing is read or written
+// here: the referrer and campaign tags of the page a visitor arrives on are
+// sent with that page's page_view only, once per page load, and not kept.
+let arrivalSent = false;
+export function arrivalAttribution(): FirstTouchAttribution | null {
+  if (arrivalSent) return null;
+  arrivalSent = true;
+  const attribution = arrivalSnapshot();
+  return Object.keys(attribution).length > 0 ? attribution : null;
+}
+
 /**
  * Returns the visitor's first-touch attribution. On the very first call for a
  * visitor it captures UTMs + referrer hostname from the current page, persists
@@ -54,9 +78,7 @@ export function captureFirstTouchAttribution(): { attribution: FirstTouchAttribu
   } catch {
     // localStorage unavailable or corrupt value; fall through and capture fresh.
   }
-  const attribution: FirstTouchAttribution = { ...readUtms() };
-  const referrerHost = readReferrerHost();
-  if (referrerHost) attribution.referrerHost = referrerHost;
+  const attribution: FirstTouchAttribution = { ...arrivalSnapshot() };
   try {
     localStorage.setItem(KEY, JSON.stringify(attribution));
   } catch {

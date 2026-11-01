@@ -5,7 +5,7 @@
 //   node scripts/seo/check.mjs --baseline <baseline.json> --dist dist \
 //     [--allow scripts/seo/allowed-changes.json] [--rules scripts/seo/rules.json] \
 //     [--out <candidate.json>] [--report <report.json>] [--strict-unused] [--budget-strict]
-//     [--skip-wp WPnn]
+//     [--skip-wp WPnn[,WPnn...]]
 //
 // Run from the repository root. Exit code 0 means every check passed.
 // --strict-unused fails on allowlist entries that matched nothing, except entries
@@ -63,7 +63,8 @@ if (allow.releaseDate) {
 }
 // --skip-wp WPnn drops the entries of one work package, for a build that leaves
 // it out (work package 12 waits for the owner's legal facts).
-if (opt('--skip-wp')) allow.entries = (allow.entries || []).filter((e) => e.wp !== opt('--skip-wp'));
+// Several packages are given with commas (--skip-wp WP12,WP14).
+if (opt('--skip-wp')) { const skip = opt('--skip-wp').split(','); allow.entries = (allow.entries || []).filter((e) => !skip.includes(e.wp)); }
 // "${en:<key>}" in allowlist entries stands for that key's value in
 // src/i18n/locales/en.json, for text the owner fills in later (the operator
 // details in the footer). A key that does not exist is left as written.

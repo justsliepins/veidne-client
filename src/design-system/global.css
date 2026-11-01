@@ -6,6 +6,12 @@
   padding: 0;
 }
 
+/* While the cookie banner is shown, scrolling to a focused element or an
+   anchor keeps it above the banner (WCAG 2.4.11). */
+html {
+  scroll-padding-bottom: var(--consent-banner-h, 0px);
+}
+
 html,
 body {
   overflow-x: hidden;

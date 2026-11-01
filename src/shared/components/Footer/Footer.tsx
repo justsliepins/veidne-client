@@ -1,9 +1,11 @@
 import { Link } from 'react-router-dom';
+import { mergeClasses } from '@fluentui/react-components';
 import { useTranslation } from '@/i18n/useTranslation';
 import { trackEvent } from '@/services/analyticsService';
 import { TRUSTPILOT_REVIEW_URL } from '@/config/constants';
 import { useTemplateStore } from '@/features/templates/store/templateStore';
 import { operatorParams } from '@/shared/utils/operator';
+import { useConsentStore } from '@/features/consent/consentStore';
 import { useFooterStyles } from './Footer.styles';
 
 /**
@@ -16,6 +18,7 @@ export function Footer() {
   const operatorReady = !Object.values(operator).some((v) => v.includes('[TO FILL:'));
   const styles = useFooterStyles();
   const { t } = useTranslation();
+  const reopenConsent = useConsentStore((st) => st.reopen);
 
   return (
     <footer className={styles.root}>
@@ -39,6 +42,8 @@ export function Footer() {
           <span className={styles.guidesHeading}>{t('footer.group.trust')}</span>
           <Link to="/privacy" className={styles.link}>{t('footer.privacy')}</Link>
           <Link to="/privacy#cookies" className={styles.link}>{t('footer.cookies')}</Link>
+          {/* Opens the cookie banner again on any page (CTA-27). */}
+          <button type="button" className={mergeClasses(styles.link, styles.linkButton)} onClick={reopenConsent}>{t('footer.cookieChoice')}</button>
           <a href="https://github.com/justsliepins/veidne-client" className={styles.link} target="_blank" rel="noopener noreferrer">{t('footer.source')}</a>
           <Link to="/accessibility" className={styles.link}>{t('footer.accessibility')}</Link>
         </nav>

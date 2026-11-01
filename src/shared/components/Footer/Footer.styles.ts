@@ -1,4 +1,4 @@
-import { makeStyles, tokens } from '@fluentui/react-components';
+import { makeStyles, shorthands, tokens } from '@fluentui/react-components';
 import { media } from '@/design-system/responsive';
 
 export const useFooterStyles = makeStyles({
@@ -76,6 +76,14 @@ export const useFooterStyles = makeStyles({
       paddingLeft: '8px',
       paddingRight: '8px',
     },
+  },
+  // A button that looks like the links around it.
+  linkButton: {
+    ...shorthands.borderStyle('none'), backgroundColor: 'transparent', padding: '0', cursor: 'pointer',
+    fontFamily: 'inherit', textAlign: 'left',
+    ':hover': { textDecorationLine: 'underline' },
+    ':focus-visible': { outline: '2px solid #5566C4', outlineOffset: '2px' },
+    [media.below.md]: { paddingLeft: '8px', paddingRight: '8px' },
   },
   // Last row of the footer: flexBasis 100% wraps it under the three columns.
   funding: {

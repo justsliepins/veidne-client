@@ -55,17 +55,6 @@ import { useStyles } from './Editor.styles';
 // Sample rows are text, so nothing in them follows regional settings.
 const NO_REGIONAL: RegionalColumns = { dates: [], numbers: [] };
 
-// Documents this browser has generated from its own files, across runs. Local
-// only: read by nothing yet, never sent. localStorage can throw in private
-// mode, so the update is best effort.
-const GENERATED_TOTAL_KEY = 'veidne_generatedTotal';
-function bumpGeneratedTotal(count: number): void {
-  try {
-    const prev = parseInt(localStorage.getItem(GENERATED_TOTAL_KEY) ?? '0', 10) || 0;
-    localStorage.setItem(GENERATED_TOTAL_KEY, String(prev + count));
-  } catch { /* private mode or storage full */ }
-}
-
 export function Editor() {
   const s = useStyles();
   const { placeholders, lastActionResult, cancelSelection, undo, redo, loadDocument, historyIndex, historyLength, fileName, rawDocxBytes } = useEditorStore(
@@ -432,10 +421,6 @@ export function Editor() {
       ...(imageFields.length > 0 ? { images } : {}),
       ...(ds.isSampleData ? { sample: true } : {}),
     });
-    // Running total of documents this browser has produced from its own
-    // files. Stays in localStorage and is never sent anywhere; sample runs
-    // (instant preview) are demo output and do not count.
-    if (!ds.isSampleData) bumpGeneratedTotal(count);
   }, [generate, placeholders, rows, columnMapping, rawDocxBytes, fileName]);
   const coaching = demoActive ? <CoachingStrip demoStep={demoStep} onSkip={skipDemo}
     onLoadData={loadSampleData} onUploadMyDocument={handleUploadMyDocument} onExploreMore={exploreMore} /> : null;

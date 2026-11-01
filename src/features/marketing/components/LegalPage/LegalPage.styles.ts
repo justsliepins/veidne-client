@@ -1,4 +1,4 @@
-import { makeStyles, tokens } from '@fluentui/react-components';
+import { makeStyles, shorthands, tokens } from '@fluentui/react-components';
 import { veidneTypography } from '@/design-system/tokens';
 import { media } from '@/design-system/responsive';
 
@@ -53,6 +53,16 @@ export const useLegalPageStyles = makeStyles({
     '& thead th': { color: tokens.colorNeutralForeground1, fontWeight: 600 },
     '& tbody th': { color: tokens.colorNeutralForeground1, fontWeight: 600 },
     [media.below.sm]: { fontSize: '14px', lineHeight: '20px', '& th, & td': { padding: '8px 6px' } },
+  },
+  // The cookie choice on the privacy notice: the current choice and a
+  // secondary button that opens the cookie banner again.
+  consentRow: { display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '8px' },
+  consentButton: {
+    minHeight: '44px', paddingLeft: '20px', paddingRight: '20px', borderRadius: '8px',
+    ...shorthands.borderStyle('solid'), ...shorthands.borderWidth('1px'), ...shorthands.borderColor('#46529E'), backgroundColor: '#FFFFFF', color: '#46529E',
+    fontSize: '15px', lineHeight: '20px', fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer',
+    ':hover': { backgroundColor: '#EEF0FA' },
+    ':focus-visible': { outline: '2px solid #5566C4', outlineOffset: '2px' },
   },
   code: { fontFamily: 'Consolas, Menlo, monospace', fontSize: '14px', overflowWrap: 'anywhere' },
   // Links inside sentences (exempt from the target-size minimum, WCAG 2.5.8).

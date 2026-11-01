@@ -1,4 +1,5 @@
 import { API_BASE_URL } from '@/config/constants';
+import { consentHeader } from '@/features/consent/consentStore';
 
 export type AnalyticsEvent =
   | 'page_view'
@@ -34,19 +35,28 @@ export type AnalyticsEvent =
   | 'feedback_answered'
   | 'feedback_reason'
   | 'donation_ask_dismissed'
-  | 'start_over';
+  | 'start_over'
+  | 'consent_choice';
 
-export function trackEvent(event: AnalyticsEvent, data?: Record<string, unknown>): void {
+export function trackEvent(event: AnalyticsEvent, data?: Record<string, unknown>, options?: { anonymous?: boolean }): void {
+  // The statistics cookie only with consent (work package 14). The header
+  // tells the API what the visitor chose: "statistics" lets it read or set
+  // veidne_uid, "none" makes it remove an old one, and no header means no
+  // choice yet. Without consent no cookie is sent and the event is recorded
+  // without an identifier. `anonymous` sends one event without either, even
+  // after consent (the consent choice itself is recorded that way).
+  const consent = options?.anonymous ? null : consentHeader();
   fetch(`${API_BASE_URL}/analytics`, {
     method: 'POST',
-    // The API derives UserId from the veidne_uid cookie. The API is served
-    // same-origin under /api today, so the cookie goes along regardless; this
-    // keeps it that way if the API ever moves to another origin.
-    credentials: 'include',
+    credentials: consent === null ? 'omit' : 'include',
     // Survive a same-tab navigation that starts right after the call (the
     // popup-blocked fallback of the donate card, the About page modal).
     keepalive: true,
-    headers: { 'Content-Type': 'application/json' },
+    // Same-origin requests would otherwise carry the full page address, query
+    // string included, in the Referer header (for example the thank-you
+    // page's payment reference). The page's path is in the body already.
+    referrerPolicy: 'no-referrer',
+    headers: consent === null ? { 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json', 'X-Veidne-Consent': consent },
     body: JSON.stringify({ event, data, timestamp: Date.now() }),
   }).catch(() => {});
 }

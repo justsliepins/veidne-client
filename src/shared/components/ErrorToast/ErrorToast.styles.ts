@@ -4,7 +4,7 @@ import { veidneTokens } from '@/design-system/tokens';
 
 export const useStyles = makeStyles({
   root: {
-    position: 'fixed', bottom: '32px', left: '50%', transform: 'translateX(-50%)',
+    position: 'fixed', bottom: 'calc(32px + var(--consent-banner-h, 0px))', left: '50%', transform: 'translateX(-50%)',
     zIndex: veidneTokens.zIndex.toast, backgroundColor: '#FFFFFF', borderRadius: '8px',
     borderLeftStyle: 'solid', borderLeftWidth: '4px', borderLeftColor: '#EF4444',
     boxShadow: '0px 4px 24px rgba(0, 0, 0, 0.08)',
@@ -14,7 +14,7 @@ export const useStyles = makeStyles({
     '@media (prefers-reduced-motion: reduce)': { transitionProperty: 'none' },
     [media.below.sm]: {
       // Sit above the soft keyboard so errors stay visible while typing.
-      left: '16px', right: '16px', bottom: 'calc(16px + var(--kb-inset, 0px))',
+      left: '16px', right: '16px', bottom: 'calc(16px + var(--kb-inset, 0px) + var(--consent-banner-h, 0px))',
       transform: 'none', maxWidth: 'none',
     },
   },

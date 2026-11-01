@@ -11,6 +11,7 @@ import { clearSession } from '@/features/editor/utils/sessionPersistence';
 import { t } from '@/i18n/i18n';
 import { usePageViewTracking } from '@/shared/hooks/usePageViewTracking';
 import { useMobileKeyboard } from '@/shared/hooks/useMobileKeyboard';
+import { ConsentBanner } from '@/features/consent/ConsentBanner';
 import { usePageLayoutStyles } from './PageLayout.styles';
 
 interface PageLayoutProps {
@@ -73,6 +74,9 @@ export function PageLayout({
   return (
     <div className={mergeClasses(styles.root, fillViewport && styles.rootConstrained)}>
       <a href="#main-content" className={styles.skipLink}>{t('a11y.skipToContent')}</a>
+      {/* Shown at the bottom of the screen, but first in the reading and tab
+          order after the skip link, so it is found before the page. */}
+      <ConsentBanner />
       <header>
         <NavBar variant={navVariant} editor={editorNav} />
       </header>

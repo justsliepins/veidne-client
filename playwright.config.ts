@@ -15,6 +15,17 @@ import { defineConfig, devices } from '@playwright/test';
 const FEATURE_ON_URL = 'http://localhost:5173';
 const DARK_LAUNCH_URL = 'http://localhost:5181';
 
+// Every spec starts with the cookie choice made (allowed), so the cookie
+// banner (work package 14) is not on screen and the statistics work as they
+// did before it. e2e/consent.spec.ts starts without a choice.
+const CONSENT_GRANTED = JSON.stringify({ v: 1, statistics: true, at: Date.now() });
+const CONSENT_STORAGE = {
+  cookies: [],
+  origins: [FEATURE_ON_URL, DARK_LAUNCH_URL].map((origin) => ({
+    origin, localStorage: [{ name: 'veidne_consent', value: CONSENT_GRANTED }],
+  })),
+};
+
 export default defineConfig({
   testDir: './e2e',
   outputDir: './e2e/.artifacts',
@@ -36,6 +47,7 @@ export default defineConfig({
     // keep the US-style values the existing specs expect on any machine.
     locale: 'en-US',
     timezoneId: 'UTC',
+    storageState: CONSENT_STORAGE,
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: [

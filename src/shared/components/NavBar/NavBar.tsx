@@ -6,6 +6,7 @@ import { Logo } from '@/shared/components/Logo';
 import { useTranslation } from '@/i18n/useTranslation';
 import { useTemplateStore } from '@/features/templates/store/templateStore';
 import { BugReportModal } from '@/features/bug-report/components/BugReportModal';
+import { useConsentStore } from '@/features/consent/consentStore';
 import { useNavBarStyles } from './NavBar.styles';
 
 interface NavBarProps {
@@ -21,6 +22,7 @@ export function NavBar({ variant = 'light', editor = false }: NavBarProps) {
   const isLight = variant === 'light';
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [bugReportOpen, setBugReportOpen] = useState(false);
+  const reopenConsent = useConsentStore((st) => st.reopen);
 
   const openMenu = useCallback(() => setMobileMenuOpen(true), []);
   const closeMenu = useCallback(() => setMobileMenuOpen(false), []);
@@ -38,7 +40,7 @@ export function NavBar({ variant = 'light', editor = false }: NavBarProps) {
       closeButtonRef.current?.focus();
       // The page behind the open drawer is out of reach for a screen reader's
       // virtual cursor too, not only for Tab (review c, finding 18).
-      const behind = [document.getElementById('main-content'), document.querySelector('footer')].filter((el): el is HTMLElement => el !== null);
+      const behind = [document.getElementById('main-content'), document.querySelector('footer'), document.getElementById('consent-banner')].filter((el): el is HTMLElement => el !== null);
       behind.forEach((el) => el.setAttribute('inert', ''));
       const onKey = (e: KeyboardEvent) => {
         if (e.key === 'Escape') {
@@ -85,6 +87,10 @@ export function NavBar({ variant = 'light', editor = false }: NavBarProps) {
           <div className={styles.editorActions}>
             <button type="button" className={mergeClasses(linkClass, styles.linkBtn)}
               onClick={openBugReport}>{t('nav.reportBug')}</button>
+            {/* The editor has no footer, so its header keeps the way back to the
+                cookie choice (withdrawing as easy as giving, CTA-27). */}
+            <button type="button" className={mergeClasses(linkClass, styles.linkBtn)}
+              onClick={reopenConsent}>{t('nav.cookieChoice')}</button>
           </div>
         </nav>
         <BugReportModal open={bugReportOpen} onClose={closeBugReport} />

@@ -2,7 +2,7 @@ import { API_BASE_URL } from '@/config/constants';
 
 export async function submitSuggestion(req: { title: string; description: string; stripeSessionId: string }): Promise<void> {
   const res = await fetch(`${API_BASE_URL}/suggestions`, {
-    method: 'POST', credentials: 'include',
+    method: 'POST', credentials: 'omit',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(req),
   });
