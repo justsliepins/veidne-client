@@ -12,7 +12,7 @@ export function BulkDocumentGeneration() {
       />
       <UseCaseGuide
         h1="Bulk document generation from a spreadsheet"
-        lastUpdated="June 2026"
+        lastUpdated="October 2026"
         answer="Veidne is a free tool for bulk document generation from a spreadsheet. You open a Word template, click words to mark where your data goes, add an Excel file, and Veidne produces one personalized document for every row, with no code and no install. It all runs in your browser, so your template and spreadsheet never leave your device."
         whatItIs="bulk, no-code document generation from a spreadsheet."
         whoItIsFor="non-technical people who need many documents at once and do not want to write a script. Common uses are bulk letters, certificates, invoices, and contracts. It is a good fit for legal, HR, healthcare, education, and nonprofit teams that need files to stay private."
@@ -39,7 +39,7 @@ export function BulkDocumentGeneration() {
           { q: 'Do I need to code or install anything?', a: 'No on both. It runs in the browser with no account.' },
           { q: 'What goes in and what comes out?', a: 'In: a Word template and an Excel spreadsheet. Out: one personalized Word document per row, with optional PDF.' },
           { q: 'Is my data safe?', a: 'Yes. Generation is local to your browser, and the optional PDF step deletes files at once.' },
-          { q: 'Will my dates and numbers keep their Excel formatting?', a: 'Yes. Veidne uses values exactly as Excel displays them, so dates stay dates, leading zeros stay, and currency keeps its symbol and separators.' },
+          { q: 'Will my dates and numbers keep their Excel formatting?', a: "Yes. Dates stay dates, leading zeros stay, and currency keeps its symbol. Where Excel uses your computer's own style, such as 14.11.2026 or 1 234,50, you pick that style when you match your columns. Month and day names come out in English." },
         ]}
       />
     </PageLayout>

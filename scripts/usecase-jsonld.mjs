@@ -41,7 +41,7 @@ export const jsonLdByPath = {
         inLanguage: 'en',
         publisher: { '@id': 'https://veidne.com/#org' },
         description:
-          'Veidne is a free, privacy-first mail merge and bulk document generation tool that runs in the browser. Upload a Word template and an Excel spreadsheet and generate one personalized Word document per row, with no install, no account, and no code. Files are processed on your own device and are not uploaded.',
+          "Veidne is a free, privacy-first mail merge and bulk document generation tool that runs in the browser. Upload a Word template and an Excel spreadsheet and generate one personalized Word document per row, with no install, no account, and no code. The template and spreadsheet are processed on your own device and are not uploaded; only the optional PDF export sends the finished documents to Veidne's server for conversion.",
         offers: {
           '@type': 'Offer',
           price: '0',
@@ -50,7 +50,7 @@ export const jsonLdByPath = {
         featureList: [
           'Mail merge from a Word template and an Excel spreadsheet',
           'Bulk generation of one personalized document per spreadsheet row',
-          'Runs entirely in the browser, files are not uploaded',
+          'Runs in the browser; the template and spreadsheet are not uploaded',
           'No install, no account, and no code required',
           'Optional PDF export',
         ],
@@ -65,7 +65,7 @@ export const jsonLdByPath = {
         inLanguage: 'en',
         isPartOf: { '@id': 'https://veidne.com/#website' },
         about: { '@id': 'https://veidne.com/#software' },
-        dateModified: '2026-06-10',
+        dateModified: '2026-10-31',
       },
     ],
   },
@@ -98,7 +98,7 @@ export const jsonLdByPath = {
         inLanguage: 'en',
         publisher: { '@id': 'https://veidne.com/#org' },
         description:
-          'Veidne is a free, privacy-first mail merge and bulk document generation tool that runs in the browser. Upload a Word template and an Excel spreadsheet and generate one personalized Word document per row, with no install, no account, and no code. Files are processed on your own device and are not uploaded.',
+          "Veidne is a free, privacy-first mail merge and bulk document generation tool that runs in the browser. Upload a Word template and an Excel spreadsheet and generate one personalized Word document per row, with no install, no account, and no code. The template and spreadsheet are processed on your own device and are not uploaded; only the optional PDF export sends the finished documents to Veidne's server for conversion.",
         offers: {
           '@type': 'Offer',
           price: '0',
@@ -107,7 +107,7 @@ export const jsonLdByPath = {
         featureList: [
           'Mail merge from a Word template and an Excel spreadsheet',
           'Bulk generation of one personalized document per spreadsheet row',
-          'Runs entirely in the browser, files are not uploaded',
+          'Runs in the browser; the template and spreadsheet are not uploaded',
           'No install, no account, and no code required',
           'Optional PDF export',
         ],
@@ -122,7 +122,7 @@ export const jsonLdByPath = {
         inLanguage: 'en',
         isPartOf: { '@id': 'https://veidne.com/#website' },
         about: { '@id': 'https://veidne.com/#software' },
-        dateModified: '2026-06-10',
+        dateModified: '2026-10-31',
         mainEntity: [
           {
             '@type': 'Question',
@@ -161,7 +161,7 @@ export const jsonLdByPath = {
             name: 'Will my dates and numbers keep their Excel formatting?',
             acceptedAnswer: {
               '@type': 'Answer',
-              text: 'Yes. Veidne uses values exactly as Excel displays them, so dates stay dates, leading zeros stay, and currency keeps its symbol and separators.',
+              text: "Yes. Dates stay dates, leading zeros stay, and currency keeps its symbol. Where Excel uses your computer's own style, such as 14.11.2026 or 1 234,50, you pick that style when you match your columns. Month and day names come out in English.",
             },
           },
         ],
@@ -198,7 +198,7 @@ export const jsonLdByPath = {
         inLanguage: 'en',
         publisher: { '@id': 'https://veidne.com/#org' },
         description:
-          'Veidne is a free, privacy-first mail merge and bulk document generation tool that runs in the browser. Upload a Word template and an Excel spreadsheet and generate one personalized Word document per row, with no install, no account, and no code. Files are processed on your own device and are not uploaded.',
+          "Veidne is a free, privacy-first mail merge and bulk document generation tool that runs in the browser. Upload a Word template and an Excel spreadsheet and generate one personalized Word document per row, with no install, no account, and no code. The template and spreadsheet are processed on your own device and are not uploaded; only the optional PDF export sends the finished documents to Veidne's server for conversion.",
         offers: {
           '@type': 'Offer',
           price: '0',
@@ -207,7 +207,7 @@ export const jsonLdByPath = {
         featureList: [
           'Mail merge from a Word template and an Excel spreadsheet',
           'Bulk generation of one personalized document per spreadsheet row',
-          'Runs entirely in the browser, files are not uploaded',
+          'Runs in the browser; the template and spreadsheet are not uploaded',
           'No install, no account, and no code required',
           'Optional PDF export',
         ],
@@ -222,7 +222,7 @@ export const jsonLdByPath = {
         inLanguage: 'en',
         isPartOf: { '@id': 'https://veidne.com/#website' },
         about: { '@id': 'https://veidne.com/#software' },
-        dateModified: '2026-06-10',
+        dateModified: '2026-10-31',
         mainEntity: [
           {
             '@type': 'Question',
@@ -261,7 +261,7 @@ export const jsonLdByPath = {
             name: 'Will my dates and numbers keep their Excel formatting?',
             acceptedAnswer: {
               '@type': 'Answer',
-              text: 'Yes. Veidne uses values exactly as Excel displays them, so dates stay dates, leading zeros stay, and currency keeps its symbol and separators.',
+              text: "Yes. Dates stay dates, leading zeros stay, and currency keeps its symbol. Where Excel uses your computer's own style, such as 14.11.2026 or 1 234,50, you pick that style when you match your columns. Month and day names come out in English.",
             },
           },
         ],
@@ -298,7 +298,7 @@ export const jsonLdByPath = {
         inLanguage: 'en',
         publisher: { '@id': 'https://veidne.com/#org' },
         description:
-          'Veidne is a free, privacy-first mail merge and bulk document generation tool that runs in the browser. Upload a Word template and an Excel spreadsheet and generate one personalized Word document per row, with no install, no account, and no code. Files are processed on your own device and are not uploaded.',
+          "Veidne is a free, privacy-first mail merge and bulk document generation tool that runs in the browser. Upload a Word template and an Excel spreadsheet and generate one personalized Word document per row, with no install, no account, and no code. The template and spreadsheet are processed on your own device and are not uploaded; only the optional PDF export sends the finished documents to Veidne's server for conversion.",
         offers: {
           '@type': 'Offer',
           price: '0',
@@ -307,7 +307,7 @@ export const jsonLdByPath = {
         featureList: [
           'Mail merge from a Word template and an Excel spreadsheet',
           'Bulk generation of one personalized document per spreadsheet row',
-          'Runs entirely in the browser, files are not uploaded',
+          'Runs in the browser; the template and spreadsheet are not uploaded',
           'No install, no account, and no code required',
           'Optional PDF export',
         ],
@@ -322,7 +322,7 @@ export const jsonLdByPath = {
         inLanguage: 'en',
         isPartOf: { '@id': 'https://veidne.com/#website' },
         about: { '@id': 'https://veidne.com/#software' },
-        dateModified: '2026-06-10',
+        dateModified: '2026-10-31',
         mainEntity: [
           {
             '@type': 'Question',
@@ -361,7 +361,7 @@ export const jsonLdByPath = {
             name: 'Will my dates and numbers keep their Excel formatting?',
             acceptedAnswer: {
               '@type': 'Answer',
-              text: 'Yes. Veidne uses values exactly as Excel displays them, so dates stay dates, leading zeros stay, and currency keeps its symbol and separators.',
+              text: "Yes. Dates stay dates, leading zeros stay, and currency keeps its symbol. Where Excel uses your computer's own style, such as 14.11.2026 or 1 234,50, you pick that style when you match your columns. Month and day names come out in English.",
             },
           },
         ],
@@ -398,7 +398,7 @@ export const jsonLdByPath = {
         inLanguage: 'en',
         publisher: { '@id': 'https://veidne.com/#org' },
         description:
-          'Veidne is a free, privacy-first mail merge and bulk document generation tool that runs in the browser. Upload a Word template and an Excel spreadsheet and generate one personalized Word document per row, with no install, no account, and no code. Files are processed on your own device and are not uploaded.',
+          "Veidne is a free, privacy-first mail merge and bulk document generation tool that runs in the browser. Upload a Word template and an Excel spreadsheet and generate one personalized Word document per row, with no install, no account, and no code. The template and spreadsheet are processed on your own device and are not uploaded; only the optional PDF export sends the finished documents to Veidne's server for conversion.",
         offers: {
           '@type': 'Offer',
           price: '0',
@@ -407,7 +407,7 @@ export const jsonLdByPath = {
         featureList: [
           'Mail merge from a Word template and an Excel spreadsheet',
           'Bulk generation of one personalized document per spreadsheet row',
-          'Runs entirely in the browser, files are not uploaded',
+          'Runs in the browser; the template and spreadsheet are not uploaded',
           'No install, no account, and no code required',
           'Optional PDF export',
         ],
@@ -422,7 +422,7 @@ export const jsonLdByPath = {
         inLanguage: 'en',
         isPartOf: { '@id': 'https://veidne.com/#website' },
         about: { '@id': 'https://veidne.com/#software' },
-        dateModified: '2026-06-10',
+        dateModified: '2026-10-31',
         mainEntity: [
           {
             '@type': 'Question',
@@ -453,7 +453,7 @@ export const jsonLdByPath = {
             name: 'Is it free and private?',
             acceptedAnswer: {
               '@type': 'Answer',
-              text: 'Yes to both. It is donation-funded, needs no account, and keeps your files in the browser.',
+              text: 'Yes to both. It is donation-funded, needs no account, and keeps your template and spreadsheet in the browser.',
             },
           },
           {
@@ -461,7 +461,7 @@ export const jsonLdByPath = {
             name: 'Will my dates and numbers keep their Excel formatting?',
             acceptedAnswer: {
               '@type': 'Answer',
-              text: 'Yes. Veidne uses values exactly as Excel displays them, so dates stay dates, leading zeros stay, and currency keeps its symbol and separators.',
+              text: "Yes. Dates stay dates, leading zeros stay, and currency keeps its symbol. Where Excel uses your computer's own style, such as 14.11.2026 or 1 234,50, you pick that style when you match your columns. Month and day names come out in English.",
             },
           },
         ],

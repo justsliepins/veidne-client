@@ -12,7 +12,7 @@ export function FreeOnlineMailMerge() {
       />
       <UseCaseGuide
         h1="Free online mail merge"
-        lastUpdated="June 2026"
+        lastUpdated="October 2026"
         answer="Veidne is a free online mail merge tool that runs entirely in your browser. You open a Word template, click the words you want to personalize to turn them into fields, add an Excel spreadsheet, and Veidne creates one personalized Word document for every row. There is no install, no account, and your template and spreadsheet never leave your device."
         whatItIs="a browser-based mail merge for Word and Excel."
         whoItIsFor="anyone who needs many personalized documents and does not want to install software, create an account, or write code. It suits legal, HR, healthcare, education, and nonprofit work, where keeping files private matters."
@@ -35,7 +35,7 @@ export function FreeOnlineMailMerge() {
           { q: 'Are my files uploaded anywhere?', a: 'No. The mail merge runs in your browser. Only the optional PDF export uses a server, and it deletes your files immediately.' },
           { q: 'Do I need Microsoft Word or Office?', a: 'No. You need a Word template and an Excel file, but you do not need Word or Office installed.' },
           { q: 'How many documents can I create at once?', a: 'Hundreds in a single run. The practical limit is your own device, not a paywall.' },
-          { q: 'Will my dates and numbers keep their Excel formatting?', a: 'Yes. Veidne uses values exactly as Excel displays them, so dates stay dates, leading zeros stay, and currency keeps its symbol and separators.' },
+          { q: 'Will my dates and numbers keep their Excel formatting?', a: "Yes. Dates stay dates, leading zeros stay, and currency keeps its symbol. Where Excel uses your computer's own style, such as 14.11.2026 or 1 234,50, you pick that style when you match your columns. Month and day names come out in English." },
         ]}
       />
     </PageLayout>

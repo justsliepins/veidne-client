@@ -12,7 +12,7 @@ export function GenerateWordDocumentsFromExcel() {
       />
       <UseCaseGuide
         h1="Generate Word documents from Excel"
-        lastUpdated="June 2026"
+        lastUpdated="October 2026"
         answer="Veidne is a free tool to generate Word documents from Excel, one personalized document for each row of your spreadsheet, directly in your browser. You open a Word template, click the words you want to fill from your data to mark them as fields, add your Excel file, and download the finished documents. It needs no install and no account, and your template and spreadsheet stay on your device."
         whatItIs="a tool that merges Excel rows into Word documents."
         whoItIsFor="people who keep their data in a spreadsheet and need a document per row, such as letters, certificates, invoices, or contracts, without writing code."
@@ -35,7 +35,7 @@ export function GenerateWordDocumentsFromExcel() {
           { q: 'Do I need to know how to code?', a: 'No. Veidne is built for people who will not or cannot write a script.' },
           { q: 'Can I match columns to specific places in the document?', a: 'Yes. You choose which words become fields, and each field is filled from the matching column.' },
           { q: 'Does my data leave my computer?', a: 'No, the generation happens in the browser. Only optional PDF export touches a server, and it deletes files immediately.' },
-          { q: 'Will my dates and numbers keep their Excel formatting?', a: 'Yes. Veidne uses values exactly as Excel displays them, so dates stay dates, leading zeros stay, and currency keeps its symbol and separators.' },
+          { q: 'Will my dates and numbers keep their Excel formatting?', a: "Yes. Dates stay dates, leading zeros stay, and currency keeps its symbol. Where Excel uses your computer's own style, such as 14.11.2026 or 1 234,50, you pick that style when you match your columns. Month and day names come out in English." },
         ]}
       />
     </PageLayout>

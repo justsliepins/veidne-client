@@ -12,7 +12,7 @@ export function MailMergeWithoutWord() {
       />
       <UseCaseGuide
         h1="Mail merge without Word or Microsoft Office"
-        lastUpdated="June 2026"
+        lastUpdated="October 2026"
         answer="Veidne lets you run a mail merge without Microsoft Word or Office. It works in any modern browser, so you can open a Word template and an Excel spreadsheet, generate one personalized document per row, and download the results without installing or buying anything. Your template and spreadsheet stay on your device."
         whatItIs="a mail merge that needs no Word or Office install."
         whoItIsFor="people who do not have Word or Office, or do not want to use it, but still need personalized documents from a spreadsheet."
@@ -34,8 +34,8 @@ export function MailMergeWithoutWord() {
           { q: 'Do I really not need Word or Office?', a: 'Correct. You need a .docx template and an .xlsx file, but no Microsoft software is required.' },
           { q: 'What if I do not have Word to make a template?', a: 'Use a free editor such as Google Docs or LibreOffice and save as .docx.' },
           { q: 'Can I open the finished documents without Word?', a: 'Yes. They are standard .docx files that open in free editors, or you can export to PDF.' },
-          { q: 'Is it free and private?', a: 'Yes to both. It is donation-funded, needs no account, and keeps your files in the browser.' },
-          { q: 'Will my dates and numbers keep their Excel formatting?', a: 'Yes. Veidne uses values exactly as Excel displays them, so dates stay dates, leading zeros stay, and currency keeps its symbol and separators.' },
+          { q: 'Is it free and private?', a: 'Yes to both. It is donation-funded, needs no account, and keeps your template and spreadsheet in the browser.' },
+          { q: 'Will my dates and numbers keep their Excel formatting?', a: "Yes. Dates stay dates, leading zeros stay, and currency keeps its symbol. Where Excel uses your computer's own style, such as 14.11.2026 or 1 234,50, you pick that style when you match your columns. Month and day names come out in English." },
         ]}
       />
     </PageLayout>
