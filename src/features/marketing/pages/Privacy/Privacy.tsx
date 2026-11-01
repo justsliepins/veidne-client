@@ -111,6 +111,18 @@ export function Privacy() {
                   <td>{tx('privacyNotice.cookies.purpose')}</td>
                   <td>{tx('privacyNotice.cookies.lifetime')}</td>
                 </tr>
+                <tr>
+                  <th scope="row"><code className={s.code}>__cf_bm</code>, <code className={s.code}>cf_clearance</code></th>
+                  <td>{tx('privacyNotice.cookies.cfSetBy')}</td>
+                  <td>{tx('privacyNotice.cookies.cfPurpose')}</td>
+                  <td>{tx('privacyNotice.cookies.cfLifetime')}</td>
+                </tr>
+                <tr>
+                  <th scope="row"><code className={s.code}>veidne_voter</code></th>
+                  <td>{tx('privacyNotice.cookies.voterSetBy')}</td>
+                  <td>{tx('privacyNotice.cookies.voterPurpose')}</td>
+                  <td>{tx('privacyNotice.cookies.voterLifetime')}</td>
+                </tr>
               </tbody>
             </table>
           </div>

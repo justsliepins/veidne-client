@@ -56,11 +56,12 @@ test('a page link from the footer opens the privacy notice at the top', async ({
   await expect(page.getByRole('heading', { level: 1 })).toBeInViewport();
 });
 
-test('while the operator details are placeholders, no footer shows them', async ({ page }) => {
-  await page.goto(`${BASE}/`);
-  await expect(page.locator('footer')).toContainText('© 2026 Veidne. All rights reserved.');
-  await expect(page.locator('footer')).not.toContainText('TO FILL');
-  await expect(page.locator('footer')).not.toContainText('Operated by');
+test('every footer names the operator and the contact address', async ({ page }) => {
+  for (const path of ['/', '/about', '/privacy']) {
+    await page.goto(`${BASE}${path}`);
+    await expect(page.locator('footer')).toContainText('Operated by Veidne IK, registration no. 40002227463, Hospitāļu iela 25 - 9, Rīga, LV-1013, Latvia. Contact: info@veidne.com.');
+    await expect(page.locator('footer')).not.toContainText('TO FILL');
+  }
 });
 
 test.describe('reflow', () => {
