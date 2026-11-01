@@ -1,0 +1,18 @@
+# Veidne
+
+> Free online mail merge in the browser: a Word template and an Excel list become one personalized document per row; files stay in the browser, no account, no install
+
+## Pages
+
+- [Free Online Mail Merge in the Browser](https://veidne.com/): Turn a Word template and an Excel file into one personalized document per row.
+- [Free Online Mail Merge, No Word or Sign-Up](https://veidne.com/free-online-mail-merge): Upload a Word template and an Excel file, then generate one personalized document per row.
+- [Generate Word Documents From Excel](https://veidne.com/generate-word-documents-from-excel): Veidne turns each spreadsheet row into a personalized Word document in your browser, with no code or install.
+- [Bulk Document Generation From a Spreadsheet](https://veidne.com/bulk-document-generation): Veidne creates one personalized document per row in your browser.
+- [Mail Merge Without Word or Office](https://veidne.com/mail-merge-without-word): Veidne runs in your browser, turning each spreadsheet row into a personalized document.
+- [About](https://veidne.com/about): Learn about Veidne, the free document template engine that automates mail merge and document generation from Word templates and Excel data.
+- [Privacy Notice](https://veidne.com/privacy): PDF conversion, usage statistics and messages you send are explained here.
+- [Accessibility](https://veidne.com/accessibility): Veidne aims to meet WCAG 2.2 level AA.
+
+## Source
+
+- [veidne-client on GitHub](https://github.com/justsliepins/veidne-client)
