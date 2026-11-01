@@ -1,9 +1,29 @@
-import { defineConfig } from 'vite';
+import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 
+// Writes dist/version.json on a client build, so https://veidne.com/version.json
+// names the commit that is live. The deployment passes the commit in
+// VITE_BUILD_COMMIT; without it the file says "unknown". Nothing else in the
+// output changes, and neither the dev server nor the prerender build runs it.
+function buildProvenance(): Plugin {
+  return {
+    name: 'veidne-build-provenance',
+    apply: 'build',
+    generateBundle() {
+      if (this.environment.config.build.ssr) return;
+      const version = {
+        repository: 'https://github.com/justsliepins/veidne-client',
+        commit: process.env.VITE_BUILD_COMMIT || 'unknown',
+        builtAt: new Date().toISOString(),
+      };
+      this.emitFile({ type: 'asset', fileName: 'version.json', source: `${JSON.stringify(version, null, 2)}\n` });
+    },
+  };
+}
+
 export default defineConfig(({ isSsrBuild }) => ({
-  plugins: [react()],
+  plugins: [react(), buildProvenance()],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),

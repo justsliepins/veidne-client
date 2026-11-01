@@ -12,6 +12,10 @@ ARG VITE_CONVERT_API_URL=
 ARG VITE_IMAGE_FIELDS=
 ENV VITE_CONVERT_API_URL=$VITE_CONVERT_API_URL
 ENV VITE_IMAGE_FIELDS=$VITE_IMAGE_FIELDS
+# The commit the image is built from, written to dist/version.json
+# (https://veidne.com/version.json). Without it the file says "unknown".
+ARG VITE_BUILD_COMMIT=
+ENV VITE_BUILD_COMMIT=$VITE_BUILD_COMMIT
 
 COPY . .
 # The release gate for legal placeholders (work package 12): the image build

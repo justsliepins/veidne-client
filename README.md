@@ -63,6 +63,10 @@ Build-time configuration is read from environment files that Vite loads by mode.
 
 `npm run lint` runs ESLint. `npm run test:e2e` runs the Playwright suite in Chromium (install it once with `npx playwright install chromium`). The suite starts two dev servers itself, on port 5173, which reads `.env.development`, and on port 5181, which runs in a mode named `darklaunch` for which no env file exists, so the PDF and image variables are absent there; nothing in the application behaves differently under the suite. The privacy canary runs against the second server and needs nothing else. Three of the four image specs, `image-fields`, `image-journeys` and `image-output`, need `VITE_IMAGE_FIELDS=true` in `.env.development`; `image-passthrough.spec.ts` runs against the second server and needs nothing. The PDF specs, except `pdf-darklaunch.spec.ts`, need `VITE_CONVERT_API_URL` in `.env.development`, and all but `pdf-entry.spec.ts` also need the converter running on port 8085; most expect its delay mode, and the two specs tagged `@real` expect its real mode and are meant to be run on their own with `npx playwright test --grep @real` (a plain `npm run test:e2e` runs them too, so pass `--grep-invert @real` to leave them out of a delay-mode run). `e2e/pdf-unreachable.spec.ts` additionally stops and restarts the converter with docker compose in a local checkout pointed to by `PROTEUS_DIR`, by default a directory named `Proteus` next to this repository, and is skipped when that checkout is not found.
 
+## What runs on veidne.com
+
+Production is built from the `main` branch of this repository. https://veidne.com/version.json names the exact commit that is live, with the time it was built. The API behind `/api` and the PDF converter are not in this repository.
+
 ## About this repository
 
 This repository holds the client only. The backend that serves `/api`, the PDF converter and the deployment configuration are private. The client was developed in the same private repository as that server code, so its earlier history cannot be published; this public repository starts at the version that was opened, and development of the client continues here.
