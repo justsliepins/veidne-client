@@ -2,6 +2,17 @@ import { makeStyles, tokens } from '@fluentui/react-components';
 import { veidneTypography } from '@/design-system/tokens';
 import { media } from '@/design-system/responsive';
 
+// Status tag in the "Where your data goes" table. A moderate radius rather
+// than a full pill: the text wraps to two or three lines in the narrow
+// column, and a pill radius turns a wrapped tag into an uneven blob with the
+// text crowding the curve. Anchored to the top of the line box so a wrapped
+// tag starts level with the text in the other columns.
+const statusTag = {
+  display: 'inline-block', maxWidth: '100%', verticalAlign: 'top', textAlign: 'left',
+  padding: '2px 10px', borderRadius: tokens.borderRadiusXLarge,
+  fontSize: '13px', lineHeight: '1.4', fontWeight: 600,
+} as const;
+
 export const useLandingStyles = makeStyles({
   featuresSection: {
     display: 'flex',
@@ -176,10 +187,18 @@ export const useLandingStyles = makeStyles({
     '& thead th': { fontSize: '12px', lineHeight: '16px', fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase', color: tokens.colorNeutralForeground3, backgroundColor: '#FAFBFF' },
     '& tbody th': { fontWeight: 600, color: tokens.colorNeutralForeground1 },
     '& tbody tr:last-child th, & tbody tr:last-child td': { borderBottom: 'none' },
+    // Fixed proportions from 640 px up so the status column is wide enough
+    // that a one-line tag stays on one line; phones keep the automatic layout.
+    [media.above.sm]: {
+      tableLayout: 'fixed',
+      '& thead th:nth-child(1)': { width: '28%' },
+      '& thead th:nth-child(2)': { width: '30%' },
+      '& thead th:nth-child(3)': { width: '42%' },
+    },
     [media.below.sm]: { '& th, & td': { padding: '12px' }, fontSize: '14px' },
   },
-  pillLocal: { display: 'inline-block', padding: '2px 10px', borderRadius: '999px', backgroundColor: 'rgba(21,128,61,.10)', color: '#166534', fontWeight: 600, fontSize: '13px' },
-  pillServer: { display: 'inline-block', padding: '2px 10px', borderRadius: '999px', backgroundColor: 'rgba(232,161,58,.16)', color: '#8A5A12', fontWeight: 600, fontSize: '13px' },
+  pillLocal: { ...statusTag, backgroundColor: 'rgba(21,128,61,.10)', color: '#166534' },
+  pillServer: { ...statusTag, backgroundColor: 'rgba(232,161,58,.16)', color: '#8A5A12' },
   dataNote: { ...veidneTypography.bodyRegular, color: tokens.colorNeutralForeground2, textAlign: 'center', maxWidth: '640px' },
 
   usesSection: {
