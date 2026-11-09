@@ -108,6 +108,12 @@ function expectClean(docs: Record<string, string>[]): void {
   }
 }
 
+/** textContent of every document paragraph containing `text`, as rendered
+ *  (the editor's chips show the field name; the preview shows the value). */
+async function renderedParagraphs(page: Page, text: string): Promise<string[]> {
+  return page.locator('p').filter({ hasText: text }).evaluateAll((ps) => ps.map((p) => p.textContent ?? ''));
+}
+
 const all = (docs: Record<string, string>[]) => docs.map((d) => Object.values(d).join(' / '));
 
 // ── Field families ──────────────────────────────────────────────────────────
@@ -123,6 +129,8 @@ test('Word MERGEFIELD letter: offered ticked, \\b/\\f kept, formatting noted, me
   await dialog(page).getByRole('button', { name: 'Add 6 fields' }).click();
   await expect(dialog(page)).toHaveCount(0);
   await expect(page.getByText(/Fields \(6\)/)).toBeVisible();
+  // The comma glued to the field by its \f text shows next to the chip.
+  expect(await renderedParagraphs(page, 'look forward')).toEqual(['Dear Title, we look forward to working with you, First_Name.']);
 
   // The import event: counts and family labels only.
   const imported = events.filter((e) => e.event === 'template_fields_imported');
@@ -134,6 +142,41 @@ test('Word MERGEFIELD letter: offered ticked, \\b/\\f kept, formatting noted, me
   expect(docs[0]['word/document.xml']).toBe(
     'Dear Anna Ozola / Your contract starts on 1 December 2026 at a monthly fee of 1,250.00 EUR. / Dear Ms, we look forward to working with you, Anna. / Delivery to Riga.');
   expect(docs[1]['word/document.xml']).toContain('Dear Mr, we look forward to working with you, Janis.');
+  expectClean(docs);
+});
+
+test('\\b and \\f text with leading punctuation is kept exactly in the editor, the preview and the output', async ({ page }) => {
+  await upload(page, 'word-mergefield-punctuation');
+  await expect(dialog(page)).toBeVisible();
+  expect(await dialogRows(page)).toEqual([
+    { name: 'Title', family: 'mergefield', checked: true },
+    { name: 'Code', family: 'mergefield', checked: true },
+  ]);
+  await dialog(page).getByRole('button', { name: 'Add 2 fields' }).click();
+  await expect(page.getByText(/Fields \(2\)/)).toBeVisible();
+  const fields = [...await renderedParagraphs(page, 'look forward'), ...await renderedParagraphs(page, 'Reference')];
+  expect(fields).toEqual(['Dear Title, we look forward to seeing you.', 'Reference (Code), "as agreed"; see C:\\Files.']);
+
+  await page.getByRole('button', { name: 'Add your data' }).last().click();
+  await page.locator('input[type="file"]').setInputFiles(path.join(DIR, 'word-mergefield-punctuation.xlsx'));
+  await page.getByRole('button', { name: 'Looks good' }).click();
+  await expect(page.getByRole('button', { name: /^Generate/ })).toBeVisible();
+  const preview = await renderedParagraphs(page, 'look forward');
+  expect(preview.length).toBeGreaterThan(0);
+  for (const line of preview) expect(line).toBe('Dear Ms, we look forward to seeing you.');
+
+  await page.getByRole('button', { name: /^Generate/ }).click();
+  await expect(page.getByRole('button', { name: 'Download Word files' })).toBeVisible({ timeout: 30_000 });
+  const downloadPromise = page.waitForEvent('download', { timeout: 30_000 });
+  await page.getByRole('button', { name: 'Download Word files' }).first().click();
+  const zip = await JSZip.loadAsync(fs.readFileSync((await (await downloadPromise).path())!));
+  const docs: Record<string, string>[] = [];
+  for (const name of Object.keys(zip.files).filter((n) => n.endsWith('.docx')).sort()) docs.push(await partsText(await zip.file(name)!.async('nodebuffer')));
+  record('word-mergefield-punctuation', { fields, preview, docs });
+  expect(docs.map((d) => d['word/document.xml']).sort()).toEqual([
+    'Dear Mr, we look forward to seeing you. / Reference (Y2), "as agreed"; see C:\\Files.',
+    'Dear Ms, we look forward to seeing you. / Reference (X1), "as agreed"; see C:\\Files.',
+  ]);
   expectClean(docs);
 });
 

@@ -45,6 +45,9 @@ const EXPECTED: Record<string, Summary> = {
     ],
     controls: [], wholeBodyLoop: null,
   },
+  'word-mergefield-punctuation': {
+    auto: [], candidates: ['mergefield:Title x1 body', 'mergefield:Code x1 body'], controls: [], wholeBodyLoop: null,
+  },
   'word-mergefield-header': {
     auto: [],
     candidates: ['mergefield:Company x1 header', 'doubleBrace:Department x1 header', 'mergefield:Reference_No x1 footer'],

@@ -3,7 +3,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { Info16Regular } from '@fluentui/react-icons';
 import { t } from '@/i18n/i18n';
 import { useEditorStore } from '../../store/editorStore';
-import { getTokenRange, getSelectedText, nextSelectableWordId, computePlaceholderCoverage, type TokenCoverage } from '../../store/editorHelpers';
+import { getTokenRange, getSelectedText, nextSelectableWordId, computePlaceholderCoverage } from '../../store/editorHelpers';
 import { useDataStore } from '@/features/data/store/dataStore';
 import { useDemoStore, getDemoTargetTokens } from '@/features/demo/store/demoStore';
 import type { WordToken } from '../../utils/types';
@@ -327,11 +327,9 @@ export function DocumentArea({ previewMode = false, getFilledValue, transitionBe
     return { phTokens, chipAt };
   }, [placeholders]);
 
-  // Token text glued to {{...}} braces, preserved around merged values (preview only).
-  const coverage = useMemo(
-    () => previewMode ? computePlaceholderCoverage(wordTokens) : new Map<string, TokenCoverage>(),
-    [previewMode, wordTokens],
-  );
+  // Token text glued to {{...}} braces ("{{Title}}," or "({{Name}})"), shown
+  // around the chip while editing and around the merged value in preview.
+  const coverage = useMemo(() => computePlaceholderCoverage(wordTokens), [wordTokens]);
 
   const selectedSet = useMemo(() => new Set(selectedTokenIds), [selectedTokenIds]);
   const previewSet = useMemo(() => {
@@ -467,11 +465,13 @@ export function DocumentArea({ previewMode = false, getFilledValue, transitionBe
       }
       return (
         <span key={token.id} onMouseDown={() => { interactedRef.current = true; }}>
+          {cov?.prefix}
           <PlaceholderChip placeholder={ph}
             open={openChipTokenId === token.id}
             onOpenChange={(isOpen) => setOpenChipTokenId(isOpen ? token.id : null)}
             onRename={(name) => { renamePlaceholder(ph.id, name); setOpenChipTokenId(null); }}
             onDelete={() => { deletePlaceholder(ph.id); setOpenChipTokenId(null); }} />
+          {cov?.suffix}
         </span>
       );
     }

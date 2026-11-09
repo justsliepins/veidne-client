@@ -193,8 +193,10 @@ export function parseMergeField(instr: string): MergeFieldInstruction | null {
   const out: MergeFieldInstruction = { name, before: '', after: '', date: false, number: false };
   // A switch argument is a quoted string or a bare word; it never starts
   // with a backslash, so "\m \* MERGEFORMAT" does not read "\*" as \m's.
-  for (const s of rest.matchAll(/\\([*@#bfmv])(?:\s*(?:"([^"]*)"|([^\s\\"]+)))?/gi)) {
-    const arg = s[2] ?? s[3] ?? '';
+  // Quoted text is kept exactly as written, leading and trailing spaces and
+  // punctuation included; Word's \" and \\ escapes inside it are undone.
+  for (const s of rest.matchAll(/\\([*@#bfmv])(?:\s*(?:"((?:[^"\\]|\\.)*)"|([^\s\\"]+)))?/gi)) {
+    const arg = s[2] !== undefined ? s[2].replace(/\\(.)/g, '$1') : (s[3] ?? '');
     switch (s[1].toLowerCase()) {
       case 'b': out.before = arg; break;
       case 'f': out.after = arg; break;

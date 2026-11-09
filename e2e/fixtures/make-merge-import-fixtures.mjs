@@ -319,4 +319,15 @@ await makeDocx('prose-braces-percent.docx', {
 });
 makeXlsx('prose-braces-percent.xlsx', ['Name'], [['Anna'], ['Janis']]);
 
+// 14. \b and \f text that starts or ends with punctuation and spaces, kept
+//     exactly as written: Word prints "Dear Ms, we look forward to seeing
+//     you." Word's \" and \\ escapes inside the quoted text are undone.
+await makeDocx('word-mergefield-punctuation.docx', {
+  body: [
+    p(complexField([' MERGEFIELD Title \\b "Dear " \\f ", we look forward to seeing you." ', '\\* MERGEFORMAT '], '«Title»')),
+    p(t('Reference '), complexField([' MERGEFIELD Code \\b "(" \\f "), \\"as agreed\\"; see C:\\\\Files." \\* MERGEFORMAT '], '«Code»')),
+  ],
+});
+makeXlsx('word-mergefield-punctuation.xlsx', ['Title', 'Code'], [['Ms', 'X1'], ['Mr', 'Y2']]);
+
 console.log(`wrote ${fs.readdirSync(DIR).length} files to ${DIR}`);
