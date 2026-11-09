@@ -508,13 +508,16 @@ export function Editor() {
       onReport={() => setBugReportOpen(true)}
       onDismiss={() => { setGenerateError(null); focusAfterDialog(() => generateBtnRef.current); }} />
   );
+  // The Data step's own screens (choose, kit, upload) say Generate is blocked
+  // before any data is added, not only once the preview is reached.
+  const dataNotice = <TemplateControlsNotice controls={templateControls} step="data" standalone />;
   // Notices at the top of the preview. Below 768 px the preview panel covers
   // the document column, so they render at the top of that panel instead;
   // otherwise the empty-field warning and the failure panel were hidden on phones.
   const previewNotices = (
     <>
       {errorPanel}
-      {!errorPanel && <TemplateControlsNotice controls={templateControls} />}
+      {!errorPanel && <TemplateControlsNotice controls={templateControls} step="data" />}
       {isSampleData && <SampleDataBanner onUseMyFiles={handleUseMyFiles} />}
       <DataLoadedInfoBar beat={dataTransitionBeat} rowCount={rows.length}
         fieldCount={filledFieldCount} onDismiss={dismissInfoBar}
@@ -572,17 +575,18 @@ export function Editor() {
             <MatchDataScreen columns={dataColumns} rowCount={rows.length}
               onUploadTemplate={handleMatchDataTemplate} onBack={handleMatchDataBack} />
           ) : dataSubState === 'bridge' && placeholders.length > 0 ? (
-            <div style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, minHeight: 0, overflow: 'auto' }}>{coaching}<BridgeScreen placeholders={placeholders.map(p => ({ name: p.name, colorIndex: p.colorIndex }))}
+            <div style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, minHeight: 0, overflow: 'auto' }}>{coaching}{dataNotice}<BridgeScreen placeholders={placeholders.map(p => ({ name: p.name, colorIndex: p.colorIndex }))}
               onUpload={handleExcelFile} onCreateKit={() => { setDataSubState('kit'); if (demoActive) useDemoStore.getState().advanceStep('step3_kit'); }}
               onBack={() => setPhase('placeholders')} pulseRight={demoStep === 'step3_choose'} />
               <div style={{ display: 'flex', justifyContent: 'center', padding: '0 24px 24px' }}><ImageIntakePanel /></div></div>
           ) : dataSubState === 'kit' ? (
-            <div style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, minHeight: 0, overflow: 'auto' }}>{coaching}<KitFlow placeholders={placeholders.map(p => ({ name: p.name, colorIndex: p.colorIndex }))}
+            <div style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, minHeight: 0, overflow: 'auto' }}>{coaching}{dataNotice}<KitFlow placeholders={placeholders.map(p => ({ name: p.name, colorIndex: p.colorIndex }))}
               baseName={baseName} onUpload={handleExcelFile} onError={handleFileError}
               onBack={() => setDataSubState('bridge')} />
               <div style={{ display: 'flex', justifyContent: 'center', padding: '0 24px 24px' }}><ImageIntakePanel /></div></div>
           ) : (
             <div className={s.uploadWrapper}>
+              {dataNotice}
               <DataUploadGuidance placeholders={placeholders.map(p => ({ name: p.name, colorIndex: p.colorIndex }))} />
               <DropZone accept={['.xlsx', '.xls']} onFile={handleExcelFile} onError={handleFileError} icon={TableRegular} titleKey="data.upload.title" subtitleKey="data.upload.subtitle" formatHintKey="dropZone.formats" wrongTypeKey="error.file.wrongType.data" tooLargeKey="error.file.tooLargeData" reassuranceKey="privacy.local" loading={parsing} />
               <ImageIntakePanel />

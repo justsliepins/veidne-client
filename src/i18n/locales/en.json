@@ -871,6 +871,8 @@
   "import.loop.removed": "Removed {open} and {close}. Everything that was between them is still in your document, and Veidne makes one copy of it per spreadsheet row.",
   "import.controls.wordField": "Word {tag} field",
   "import.controls.more": "{list} and {count} more",
+  "controls.notice.title": "Generate is blocked for this template",
+  "controls.notice.data": "Generate will refuse this template, so adding data here will not get you documents yet. It still contains {tags} from another mail merge tool. Veidne makes one document per spreadsheet row and cannot repeat content inside one document or choose text with a condition. Remove these in Word and upload the file again.",
   "controls.notice": "This template still contains {tags} from another mail merge tool. Veidne makes one document per spreadsheet row and cannot repeat content inside one document or choose text with a condition, so it will not generate documents from it. Remove these in Word and upload the file again.",
   "error.generate.cause.controls": "This template contains a repeating section or a condition from another mail merge tool. Veidne makes one document per spreadsheet row and cannot repeat content inside one document. Remove it in Word, then upload the file again.",
   "placeholder.sidebar.outsideBody": "in header/footer"

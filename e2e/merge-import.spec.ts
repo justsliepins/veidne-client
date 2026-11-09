@@ -317,10 +317,21 @@ test('«Name» and ${Code}: offered ticked, merge', async ({ page }) => {
 /** A blocked template: the notice stays, Generate is refused with the reason
  *  and never starts a run. */
 async function expectBlocked(page: Page, fixture: string, events: { event: string }[]): Promise<string> {
-  await expect(page.getByTestId('template-controls-notice')).toBeVisible();
+  const notice = page.getByTestId('template-controls-notice');
+  await expect(notice).toBeVisible();
+  await expect(notice).toHaveAttribute('data-step', 'fields');
+  await expect(notice).toContainText('Generate is blocked for this template');
+  // The Data step says so before any data is added, and so does the preview.
   await page.getByRole('button', { name: 'Add your data' }).last().click();
+  await expect(notice).toBeVisible();
+  await expect(notice).toHaveAttribute('data-step', 'data');
+  await expect(notice).toContainText('Generate is blocked for this template');
+  await expect(notice).toContainText('adding data here will not get you documents yet');
   await page.locator('input[type="file"]').setInputFiles(path.join(DIR, `${fixture}.xlsx`));
   await page.getByRole('button', { name: 'Looks good' }).click();
+  await expect(page.getByRole('button', { name: /^Generate/ })).toBeVisible();
+  await expect(notice).toBeVisible();
+  await expect(notice).toHaveAttribute('data-step', 'data');
   await page.getByRole('button', { name: /^Generate/ }).click();
   const panel = page.getByTestId('generate-error');
   await expect(panel).toBeVisible();
