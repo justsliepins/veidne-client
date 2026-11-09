@@ -384,6 +384,9 @@ export function Editor() {
   // Every generate_started that does not end in generate_completed records
   // why, so a blocked user shows up as a reason and not as an unmatched row.
   const handleGenerate = useCallback(async () => {
+    // A run already in flight: further clicks are not attempts, so they are
+    // neither started nor reported as failed.
+    if (useGeneratorStore.getState().isGenerating) return;
     trackEvent('generate_started', useDataStore.getState().isSampleData ? { sample: true } : undefined);
     setGenerateError(null);
     if (!rawDocxBytes) { trackEvent('generate_failed', { path: 'no_document' }); return; }
