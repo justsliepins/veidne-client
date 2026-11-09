@@ -291,7 +291,10 @@ export function Editor() {
   }, [matchWithLoadedTemplate]);
   const handleConfirmImport = useCallback((keys: string[]) => {
     try {
-      confirmImport(keys);
+      const summary = confirmImport(keys);
+      // How many fields, and in which syntax families: counts and fixed
+      // labels only, never a field name, document text or file name.
+      trackEvent('template_fields_imported', { count: summary.count, families: summary.families });
     } catch (e) {
       console.warn('[mergeImport] import failed:', e);
       setErrorMsg(t('error.file.corrupt'));

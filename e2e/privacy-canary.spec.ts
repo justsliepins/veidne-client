@@ -45,7 +45,7 @@ const MAX_TOTAL_BODY_BYTES = 16384;
 // flight. The full union lives in src/services/analyticsService.ts.
 const REQUIRED_EVENTS = ['page_view', 'document_uploaded', 'excel_uploaded', 'generate_started', 'generate_completed'];
 const KNOWN_EVENTS = new Set([
-  'page_view', 'matrix_selection', 'document_uploaded', 'placeholder_created',
+  'page_view', 'matrix_selection', 'document_uploaded', 'placeholder_created', 'template_fields_imported',
   'excel_uploaded', 'generate_started', 'generate_completed', 'template_downloaded',
   'template_selected', 'kit_downloaded', 'donation_initiated', 'suggestion_submitted',
   'roadmap_voted', 'demo_started', 'instant_preview_opened', 'instant_preview_swapped',

@@ -6,6 +6,7 @@ export type AnalyticsEvent =
   | 'matrix_selection'
   | 'document_uploaded'
   | 'placeholder_created'
+  | 'template_fields_imported'
   | 'excel_uploaded'
   | 'generate_started'
   | 'generate_completed'
