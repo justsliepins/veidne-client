@@ -54,6 +54,10 @@ export interface Placeholder {
   /** Missing means 'text' (all fields predate the image type). Image fields
    *  live as {{NAME}} alt-text tags on drawings, not as document text. */
   type?: 'text' | 'image';
+  /** Occurrences in headers and footers, which the editor does not show.
+   *  They were written into those parts as {{tag}} when the field was
+   *  imported; the tagger writes the field's current name there. */
+  outsideBody?: { tag: string; count: number; parts: ('body' | 'header' | 'footer')[] };
 }
 
 export type SelectionState = 'idle' | 'oneWord' | 'rangeSelected';

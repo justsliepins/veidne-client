@@ -1,13 +1,28 @@
 import { create } from 'zustand';
-import PizZip from 'pizzip';
 import { parseDocxDirect } from '../utils/docxDirectParser';
-import { normalizeFieldsInDocx } from '../utils/normalizeFields';
+import { analyzeTemplate, applyImport, outsideBodyFields, removeWholeBodyLoop, type ImportAnalysis, type ImportCandidate } from '../utils/mergeImport';
+import type { ControlFinding, FieldFamily } from '../utils/placeholderDetector';
 import { setImageFieldTag, clearImageFieldTagsByName, imageFieldNameFromDescr } from '../utils/imageFieldXml';
 import { useDataStore } from '@/features/data/store/dataStore';
 import type { WordToken, Placeholder, SelectionState, EditorSnapshot, PageLayout, ParagraphStyle } from '../utils/types';
 import { findAllOccurrences, getTokenRange, getSelectedText, snap, idle, detectTemplatePlaceholders, nextSelectableWordId } from './editorHelpers';
 import { createTaggedTemplate } from '@/features/generator/utils/documentTagger';
 import { checkTemplateCompiles, TemplateSyntaxError } from '@/features/generator/utils/documentGenerator';
+
+/** The confirm step after an upload: what another tool's template holds,
+ *  before anything in it is changed. */
+export interface ImportOffer {
+  analysis: ImportAnalysis;
+  /** The tags removed by "Remove the two tags", once that was done. */
+  removedLoop: { open: string; close: string } | null;
+}
+
+/** What one confirmed import did, for the analytics event. Counts and family
+ *  labels only. */
+export interface ImportSummary {
+  count: number;
+  families: Partial<Record<FieldFamily, number>>;
+}
 
 interface EditorState {
   rawDocxBytes: ArrayBuffer | null; fileName: string | null;
@@ -18,7 +33,18 @@ interface EditorState {
   selectedTokenIds: string[]; hoveredTokenId: string | null;
   history: EditorSnapshot[]; historyIndex: number;
   lastActionResult: { type: 'created' | 'deleted' | 'renamed'; name: string; originalText: string; occurrenceCount: number; fieldKind?: 'text' | 'image' } | null;
+  /** Shown as the confirm step while set. */
+  importOffer: ImportOffer | null;
+  /** Loops and conditions from another tool still in the template. While any
+   *  remain, Generate is refused with the explanation. */
+  templateControls: ControlFinding[];
   loadDocument: (file: File) => Promise<void>;
+  /** Turn the chosen candidates into fields. */
+  confirmImport: (keys: string[]) => ImportSummary;
+  /** Close the confirm step without importing anything. */
+  dismissImport: () => void;
+  /** Remove the two tags of a loop that encloses the whole body. */
+  removeLoopTags: () => void;
   restoreSession: (rawBytes: ArrayBuffer, fileName: string, savedPlaceholders: unknown[]) => Promise<void>;
   clickWord: (tokenId: string) => void; hoverWord: (tokenId: string) => void;
   extendSelectionTo: (tokenId: string) => void;
@@ -66,34 +92,119 @@ function imageOccurrences(tokens: WordToken[], name: string): string[][] {
   return tokens.filter(t => t.type === 'image' && t.imageDescr === tag).map(t => [t.id]);
 }
 
+/**
+ * The fields of a document as Veidne reads them: exact {{Name}} in the body
+ * for each of `names`, on their tokens, with any {{Name}} in headers and
+ * footers carried as outsideBody, then the image fields. A field that keeps
+ * its name keeps its id and colour from `prev`.
+ */
+function buildFields(bytes: ArrayBuffer, tokens: WordToken[], names: string[], prev: Placeholder[]): Placeholder[] {
+  const wanted = new Set(names);
+  const body = detectTemplatePlaceholders(tokens, wanted);
+  const outside = outsideBodyFields(bytes, wanted);
+  const byName = new Map(body.map(p => [p.name, p]));
+  const prevByName = new Map(prev.filter(p => p.type !== 'image').map(p => [p.name, p]));
+  // Document order for body fields, then header-only fields in name order.
+  const ordered = [...body.map(p => p.name), ...names.filter(n => !byName.has(n) && outside.has(n))];
+  const text: Placeholder[] = [];
+  for (const name of ordered) {
+    const found = byName.get(name);
+    const out = outside.get(name);
+    const old = prevByName.get(name);
+    const colorIndex = old?.colorIndex ?? text.length;
+    text.push({
+      id: old?.id ?? `ph-${Date.now()}-${colorIndex}`, name, originalText: `{{${name}}}`, colorIndex,
+      occurrences: found?.occurrences ?? [],
+      ...(out ? { outsideBody: { tag: name, count: out.count, parts: out.parts } } : {}),
+    });
+  }
+  return [...text, ...detectImageFields(tokens, text.length)];
+}
+
+/** Whether the confirm step has anything to show: fields to offer, or loops and conditions to explain. */
+function offerWorthShowing(a: ImportAnalysis): boolean {
+  return a.candidates.length > 0 || a.controls.length > 0;
+}
+
 export const useEditorStore = create<EditorState>((set, get) => ({
   rawDocxBytes: null, fileName: null, htmlContent: null, wordTokens: [],
   pageLayout: null, paragraphStyles: {},
   placeholders: [], selectedPlaceholderId: null,
   selectionState: 'idle', firstClickTokenId: null, selectedTokenIds: [], hoveredTokenId: null,
   history: [{ placeholders: [] }], historyIndex: 0, lastActionResult: null,
+  importOffer: null, templateControls: [],
 
   loadDocument: async (file) => {
     const buf = await file.arrayBuffer();
-    const zip = new PizZip(buf);
-    normalizeFieldsInDocx(zip);
-    const normalizedBytes = zip.generate({ type: 'arraybuffer' }) as ArrayBuffer;
-    const { tokens, pageLayout, paragraphStyles } = parseDocxDirect(normalizedBytes);
-    const detected = detectTemplatePlaceholders(tokens);
-    detected.push(...detectImageFields(tokens, detected.length));
+    // Nothing is rewritten here. Exact {{Name}} in the body is Veidne's own
+    // form and becomes a field as it always has; everything else another
+    // tool left in the template waits for the user's confirmation.
+    const analysis = analyzeTemplate(buf);
+    const { tokens, pageLayout, paragraphStyles } = parseDocxDirect(buf);
+    const detected = buildFields(buf, tokens, analysis.autoNames, []);
     // Compile once, exactly as generation will, so a template docxtemplater
-    // rejects (a mismatched {{#a}}...{{/b}} pair in a header, for instance)
-    // is refused here with the reason, not at Generate with a generic toast.
-    const problem = checkTemplateCompiles(createTaggedTemplate(normalizedBytes, detected, tokens), detected);
+    // rejects (a mismatched {{#a}}...{{/b}} pair, for instance) is refused
+    // here with the reason, not at Generate with a generic toast.
+    const problem = checkTemplateCompiles(createTaggedTemplate(buf, detected, tokens), detected);
     if (problem) {
       revokeImageUrls(tokens);
       throw new TemplateSyntaxError(problem);
     }
     revokeImageUrls(get().wordTokens);
-    set({ rawDocxBytes: normalizedBytes, fileName: file.name, htmlContent: null, wordTokens: tokens,
+    set({ rawDocxBytes: buf, fileName: file.name, htmlContent: null, wordTokens: tokens,
       pageLayout, paragraphStyles,
       placeholders: detected, selectedPlaceholderId: null, hoveredTokenId: null,
-      history: [{ placeholders: structuredClone(detected) }], historyIndex: 0, lastActionResult: null, ...idle });
+      history: [{ placeholders: structuredClone(detected) }], historyIndex: 0, lastActionResult: null, ...idle,
+      importOffer: offerWorthShowing(analysis) ? { analysis, removedLoop: null } : null,
+      templateControls: analysis.controls });
+  },
+
+  confirmImport: (keys) => {
+    const { rawDocxBytes, importOffer, placeholders, wordTokens } = get();
+    if (!rawDocxBytes || !importOffer) return { count: 0, families: {} };
+    const chosen: ImportCandidate[] = importOffer.analysis.candidates.filter(c => keys.includes(c.key));
+    const newBytes = applyImport(rawDocxBytes, chosen.map(c => c.key));
+    const analysis = analyzeTemplate(newBytes);
+    revokeImageUrls(wordTokens);
+    const { tokens, pageLayout, paragraphStyles } = parseDocxDirect(newBytes);
+    // The token ids change with the rewrite, so the fields already there are
+    // read again from the new tokens with the imported ones, by name.
+    const existing = placeholders.filter(p => p.type !== 'image').map(p => p.name);
+    const names = [...new Set([...existing, ...analysis.autoNames, ...chosen.map(c => c.name)])];
+    const next = buildFields(newBytes, tokens, names, placeholders);
+    // A change of token ids also invalidates earlier undo snapshots, so the
+    // import starts the history, as an upload does.
+    set({ rawDocxBytes: newBytes, wordTokens: tokens, pageLayout, paragraphStyles,
+      placeholders: next, selectedPlaceholderId: null, hoveredTokenId: null,
+      history: [{ placeholders: structuredClone(next) }], historyIndex: 0, lastActionResult: null, ...idle,
+      importOffer: null, templateControls: analysis.controls });
+    // Data uploaded before the template: give the new fields their columns.
+    for (const c of chosen) useDataStore.getState().mapNewField(c.name);
+
+    const families: ImportSummary['families'] = {};
+    for (const c of chosen) families[c.family] = (families[c.family] ?? 0) + 1;
+    return { count: new Set(chosen.map(c => c.name)).size, families };
+  },
+
+  dismissImport: () => set({ importOffer: null }),
+
+  removeLoopTags: () => {
+    const { rawDocxBytes, importOffer, placeholders, wordTokens } = get();
+    if (!rawDocxBytes || !importOffer?.analysis.wholeBodyLoop) return;
+    const removedLoop = importOffer.analysis.wholeBodyLoop;
+    const newBytes = removeWholeBodyLoop(rawDocxBytes);
+    if (!newBytes) return;
+    const analysis = analyzeTemplate(newBytes);
+    revokeImageUrls(wordTokens);
+    const { tokens, pageLayout, paragraphStyles } = parseDocxDirect(newBytes);
+    const existing = placeholders.filter(p => p.type !== 'image').map(p => p.name);
+    const next = buildFields(newBytes, tokens, [...new Set([...existing, ...analysis.autoNames])], placeholders);
+    // The step stays open: it says what was removed, and lists the fields
+    // that were inside the loop and still need a yes.
+    set({ rawDocxBytes: newBytes, wordTokens: tokens, pageLayout, paragraphStyles,
+      placeholders: next, selectedPlaceholderId: null, hoveredTokenId: null,
+      history: [{ placeholders: structuredClone(next) }], historyIndex: 0, lastActionResult: null, ...idle,
+      importOffer: { analysis, removedLoop }, templateControls: analysis.controls });
   },
 
   restoreSession: async (rawBytes, fileName, savedPlaceholders) => {
@@ -106,7 +217,10 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     set({ rawDocxBytes: rawBytes, fileName, htmlContent: null, wordTokens: tokens,
       pageLayout, paragraphStyles,
       placeholders: phs, selectedPlaceholderId: null, hoveredTokenId: null,
-      history: [{ placeholders: structuredClone(phs) }], historyIndex: 0, lastActionResult: null, ...idle });
+      history: [{ placeholders: structuredClone(phs) }], historyIndex: 0, lastActionResult: null, ...idle,
+      // The saved bytes are the ones the user worked on, so a loop that was
+      // still there keeps Generate refused after a reload.
+      importOffer: null, templateControls: analyzeTemplate(rawBytes).controls });
   },
 
   clickWord: (tokenId) => {
@@ -255,5 +369,6 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   reset: () => { revokeImageUrls(get().wordTokens); set({ rawDocxBytes: null, fileName: null, htmlContent: null, wordTokens: [],
     pageLayout: null, paragraphStyles: {},
     placeholders: [], selectedPlaceholderId: null, hoveredTokenId: null,
-    history: [{ placeholders: [] }], historyIndex: 0, lastActionResult: null, ...idle }); },
+    history: [{ placeholders: [] }], historyIndex: 0, lastActionResult: null, ...idle,
+    importOffer: null, templateControls: [] }); },
 }));

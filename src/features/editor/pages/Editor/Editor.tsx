@@ -38,6 +38,8 @@ import { DataLoadedInfoBar } from '@/features/data/components/DataLoadedInfoBar'
 import { RegionalFormatBar } from '@/features/data/components/RegionalFormatBar';
 import type { RegionalColumns } from '@/features/data/utils/excelParser';
 import { TemplateUploadGuidance } from '../../components/TemplateUploadGuidance';
+import { ImportFieldsDialog } from '../../components/ImportFieldsDialog';
+import { TemplateControlsNotice } from '../../components/TemplateControlsNotice';
 import { GenerateProgressModal } from '@/features/generator/components/GenerateProgress';
 import { GenerateErrorPanel } from '@/features/generator/components/GenerateErrorPanel';
 import { describeGenerateFailure, type GenerateFailure } from '@/features/generator/utils/generateFailure';
@@ -59,6 +61,9 @@ export function Editor() {
   const s = useStyles();
   const { placeholders, lastActionResult, cancelSelection, undo, redo, loadDocument, historyIndex, historyLength, fileName, rawDocxBytes } = useEditorStore(
     useShallow((s) => ({ placeholders: s.placeholders, lastActionResult: s.lastActionResult, cancelSelection: s.cancelSelection, undo: s.undo, redo: s.redo, loadDocument: s.loadDocument, historyIndex: s.historyIndex, historyLength: s.history.length, fileName: s.fileName, rawDocxBytes: s.rawDocxBytes })),
+  );
+  const { importOffer, templateControls, confirmImport, dismissImport, removeLoopTags } = useEditorStore(
+    useShallow((s) => ({ importOffer: s.importOffer, templateControls: s.templateControls, confirmImport: s.confirmImport, dismissImport: s.dismissImport, removeLoopTags: s.removeLoopTags })),
   );
   const baseName = fileName?.replace(/\.docx$/i, '') ?? 'document';
   const { editorPhase, setPhase, rows, columnMapping, matchResult, loadExcel, applyMapping, cancelMapping, getFilledValue, dataTransitionBeat, dismissInfoBar, dataSubState, setDataSubState, matchWithLoadedTemplate } = useDataStore(
@@ -268,13 +273,33 @@ export function Editor() {
     if (/\.xlsx?$/i.test(file.name)) { useEditorStore.getState().reset(); useDataStore.getState().reset(); handleStartFile(file); }
     else void handleDocFile(file);
   }, [handleDocFile, handleStartFile]);
+  // Spreadsheet first, then a template that opens the import step: the
+  // columns are matched once the step closes, so the fields it adds take part.
+  const matchAfterImport = useRef(false);
   const handleMatchDataTemplate = useCallback(async (file: File) => {
     try {
       await loadDocument(file);
-      matchWithLoadedTemplate();
+      if (useEditorStore.getState().importOffer) matchAfterImport.current = true;
+      else matchWithLoadedTemplate();
       trackEvent('document_uploaded');
     } catch (e) { showDocumentLoadError(e); }
   }, [loadDocument, matchWithLoadedTemplate, showDocumentLoadError]);
+  const afterImportStep = useCallback(() => {
+    if (!matchAfterImport.current) return;
+    matchAfterImport.current = false;
+    matchWithLoadedTemplate();
+  }, [matchWithLoadedTemplate]);
+  const handleConfirmImport = useCallback((keys: string[]) => {
+    try {
+      confirmImport(keys);
+    } catch (e) {
+      console.warn('[mergeImport] import failed:', e);
+      setErrorMsg(t('error.file.corrupt'));
+      dismissImport();
+    }
+    afterImportStep();
+  }, [confirmImport, dismissImport, afterImportStep]);
+  const handleDismissImport = useCallback(() => { dismissImport(); afterImportStep(); }, [dismissImport, afterImportStep]);
   const handleMatchDataBack = useCallback(() => {
     useDataStore.getState().reset();
     setPhase('excelUpload');
@@ -387,6 +412,13 @@ export function Editor() {
     // A run already in flight: further clicks are not attempts, so they are
     // neither started nor reported as failed.
     if (useGeneratorStore.getState().isGenerating) return;
+    // A loop or condition from another tool is still in the template: say so
+    // where the user pressed Generate, and do not start a run.
+    if (useEditorStore.getState().templateControls.length > 0) {
+      setGenerateError({ kind: 'controls' });
+      setGenerateAttempt((n) => n + 1);
+      return;
+    }
     trackEvent('generate_started', useDataStore.getState().isSampleData ? { sample: true } : undefined);
     setGenerateError(null);
     if (!rawDocxBytes) { trackEvent('generate_failed', { path: 'no_document' }); return; }
@@ -479,6 +511,7 @@ export function Editor() {
   const previewNotices = (
     <>
       {errorPanel}
+      {!errorPanel && <TemplateControlsNotice controls={templateControls} />}
       {isSampleData && <SampleDataBanner onUseMyFiles={handleUseMyFiles} />}
       <DataLoadedInfoBar beat={dataTransitionBeat} rowCount={rows.length}
         fieldCount={filledFieldCount} onDismiss={dismissInfoBar}
@@ -527,7 +560,7 @@ export function Editor() {
             </div>
           )}
           {(editorPhase === 'placeholders' || editorPhase === 'mapping') && <div className={mergeClasses(s.documentWrapper, sidebarCollapsed && s.documentWrapperFull)}>
-            <div className={s.documentColumn}>{coaching}{showFieldNudge && <FieldNudge text={nudgeText} onDismiss={retireFieldNudge} />}<DocumentArea /></div>
+            <div className={s.documentColumn}>{coaching}<TemplateControlsNotice controls={templateControls} />{showFieldNudge && <FieldNudge text={nudgeText} onDismiss={retireFieldNudge} />}<DocumentArea /></div>
             <PlaceholderSidebar onScrollTo={handleScrollTo} collapsed={sidebarCollapsed}
               onToggleCollapse={() => setSidebarCollapsed(c => !c)} dataLoaded={rows.length > 0}
               onUploadData={goForwardFromFields} />
@@ -585,6 +618,11 @@ export function Editor() {
           onCancel={cancelMapping} onReupload={handleExcelFile}
           onAddFields={() => setPhase('placeholders')}
           regional={regional} formats={formatConventions} onFormatsChange={setFormatConventions} appliedMapping={columnMapping} />}
+        {importOffer && (
+          <ImportFieldsDialog
+            key={`${importOffer.analysis.candidates.map((c) => c.key).join('|')}#${importOffer.analysis.controls.length}#${importOffer.removedLoop ? 1 : 0}`}
+            offer={importOffer} onConfirm={handleConfirmImport} onDismiss={handleDismissImport} onRemoveLoop={removeLoopTags} />
+        )}
         <PicturesModal />
         <GenerateProgressModal open={isGenerating} onCancel={() => { cancel(); focusAfterDialog(() => generateBtnRef.current); }} />
         <ErrorToast message={errorMsg ?? ''} visible={!!errorMsg} onDismiss={dismissError} sticky={errorSticky} />

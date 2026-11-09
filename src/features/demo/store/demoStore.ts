@@ -42,6 +42,7 @@ export const useDemoStore = create<DemoState>((set, get) => ({
       placeholders: [], selectedPlaceholderId: null, hoveredTokenId: null,
       history: [{ placeholders: [] }], historyIndex: 0, lastActionResult: null,
       selectionState: 'idle', firstClickTokenId: null, selectedTokenIds: [],
+      importOffer: null, templateControls: [],
     });
     useDataStore.setState({ editorPhase: 'placeholders' });
     set({ demoStep: 'step1_click', isActive: true });
@@ -116,6 +117,7 @@ export const useDemoStore = create<DemoState>((set, get) => ({
       placeholders: [], selectedPlaceholderId: null, hoveredTokenId: null,
       history: [{ placeholders: [] }], historyIndex: 0, lastActionResult: null,
       selectionState: 'idle', firstClickTokenId: null, selectedTokenIds: [],
+      importOffer: null, templateControls: [],
     });
     useDataStore.getState().reset();
     useDataStore.setState({ editorPhase: 'upload' });

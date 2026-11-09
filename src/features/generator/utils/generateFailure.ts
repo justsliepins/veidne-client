@@ -9,11 +9,23 @@ export type GenerateFailure =
   | { kind: 'fieldName'; name: string; char: string }
   /** The template engine named the problem and the part it was found in. */
   | { kind: 'template'; explanation: string; file: string }
+  /** The template still holds a loop or condition from another tool, which
+   *  Veidne cannot carry out; Generate is refused before anything runs. */
+  | { kind: 'controls' }
   | { kind: 'unknown' };
+
+/** Refusal from the generator when control syntax would reach the output. */
+export class TemplateControlsError extends Error {
+  constructor() {
+    super('template_controls');
+    this.name = 'TemplateControlsError';
+  }
+}
 
 const COMMAND_PREFIX = /^[#/^@]/;
 
 export function describeGenerateFailure(e: unknown, placeholders: Placeholder[]): GenerateFailure {
+  if (e instanceof TemplateControlsError) return { kind: 'controls' };
   const info = describeTemplateError(e);
   if (!info) return { kind: 'unknown' };
   // The engine reports the tag without its command character ("Name" for

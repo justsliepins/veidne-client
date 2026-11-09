@@ -2,6 +2,7 @@ import Docxtemplater from 'docxtemplater';
 import PizZip from 'pizzip';
 import type { Placeholder } from '@/features/editor/utils/types';
 import { swapImagesInZip, type ImageFieldSwap } from './imageSwap';
+import { listMergeParts } from '@/features/editor/utils/placeholderDetector';
 
 /**
  * Thrown when docxtemplater cannot compile or render the template. Carries a
@@ -131,14 +132,18 @@ function compileTemplate(zip: PizZip): Docxtemplater {
   });
 }
 
+/** Brace protection covers every part docxtemplater renders as a template:
+ *  the body and every header and footer. A header used to go through raw, so
+ *  any {{x}} in it that was not a field merged blank, and a stray loop tag
+ *  there failed the whole run. */
 function neutralizedZip(taggedDocxBytes: ArrayBuffer, placeholders: Placeholder[]): PizZip {
   const zip = new PizZip(taggedDocxBytes);
-  const docFile = zip.file('word/document.xml');
-  if (docFile) {
-    // Image field tags live in drawing alt text, never in w:t content, so
-    // only text field names take part in brace protection.
-    const names = placeholders.filter((p) => p.type !== 'image').map((p) => p.name);
-    zip.file('word/document.xml', neutralizeIncidentalBraces(docFile.asText(), names));
+  // Image field tags live in drawing alt text, never in w:t content, so
+  // only text field names take part in brace protection.
+  const names = placeholders.filter((p) => p.type !== 'image').map((p) => p.name);
+  for (const part of listMergeParts(zip)) {
+    const file = zip.file(part);
+    if (file) zip.file(part, neutralizeIncidentalBraces(file.asText(), names));
   }
   return zip;
 }
@@ -188,9 +193,9 @@ export function generateDocument(
   }
 
   const out = doc.getZip();
-  const outFile = out.file('word/document.xml');
-  if (outFile) {
-    out.file('word/document.xml', restoreLiteralBraces(outFile.asText()));
+  for (const part of listMergeParts(out)) {
+    const outFile = out.file(part);
+    if (outFile) out.file(part, restoreLiteralBraces(outFile.asText()));
   }
 
   // Image fields (dark-launched): swap each tagged drawing's media on this

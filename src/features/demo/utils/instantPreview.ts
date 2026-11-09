@@ -63,5 +63,8 @@ export function loadInstantPreview(): void {
     selectionState: 'idle',
     firstClickTokenId: null,
     selectedTokenIds: [],
+    // A new document: nothing from an earlier template's import step carries over.
+    importOffer: null,
+    templateControls: [],
   });
 }

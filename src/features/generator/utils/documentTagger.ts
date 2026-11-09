@@ -1,6 +1,8 @@
 import PizZip from 'pizzip';
 import type { Placeholder, WordToken } from '@/features/editor/utils/types';
 import { listParagraphElements, listRunElements } from '@/features/editor/utils/docxAnchors';
+import { listMergeParts, BODY_PART } from '@/features/editor/utils/placeholderDetector';
+import { renameOutsideBodyTags } from '@/features/editor/utils/mergeImport';
 
 function escapeRegExp(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -495,6 +497,8 @@ export function createTaggedTemplate(
   }
 
   for (const ph of textFields) {
+    // A field that lives only in headers or footers has nothing to write here.
+    if (ph.occurrences.length === 0 && ph.outsideBody) continue;
     if (!xml.includes(`{{${ph.name}}}`)) {
       console.warn(
         `[documentTagger] field "${ph.name}" could not be written into the template; ` +
@@ -504,5 +508,16 @@ export function createTaggedTemplate(
   }
 
   zip.file('word/document.xml', xml);
+
+  // Header and footer occurrences were written as {{tag}} when the field was
+  // imported; a field renamed since gets its current name there too.
+  const renames = textFields.filter((p) => p.outsideBody).map((p) => ({ tag: p.outsideBody!.tag, name: p.name }));
+  if (renames.some((r) => r.tag !== r.name)) {
+    for (const part of listMergeParts(zip)) {
+      if (part === BODY_PART) continue;
+      const file = zip.file(part);
+      if (file) zip.file(part, renameOutsideBodyTags(file.asText(), renames));
+    }
+  }
   return zip.generate({ type: 'arraybuffer', compression: 'DEFLATE' });
 }

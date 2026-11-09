@@ -10,6 +10,7 @@ import { buildFileName } from '../utils/fileNaming';
 import { triggerDownload, createZipFromFiles } from '../utils/downloadHelpers';
 import { useDataStore } from '@/features/data/store/dataStore';
 import type { Placeholder } from '@/features/editor/utils/types';
+import { TemplateControlsError } from '../utils/generateFailure';
 
 export interface GeneratedFile { name: string; stem: string; blob: Blob }
 
@@ -37,6 +38,9 @@ export const useGeneratorStore = create<GeneratorState>((set, get) => ({
     // One run at a time. The progress overlay normally keeps a second click
     // out, but the store must not depend on the UI for that.
     if (get().isGenerating) return;
+    // Defence in depth behind the editor's own refusal: a loop or condition
+    // from another tool must never reach a generated document as text.
+    if (useEditorStore.getState().templateControls.length > 0) throw new TemplateControlsError();
     const baseName = originalFileName.replace(/\.docx$/i, '') || 'documents';
     set({ isGenerating: true, progress: 0, currentRow: 0, totalRows: rows.length, generatedFiles: [], cancelled: false, baseName });
     useDataStore.getState().setPhase('generating');

@@ -134,7 +134,12 @@ export function PlaceholderSidebar({ onScrollTo, collapsed, onToggleCollapse, on
                           {t('imageField.sidebar.suffix')}
                         </span>
                       )}
-                      <span className={s.count} data-row-count>x{ph.occurrences.length}</span>
+                      {ph.outsideBody && (
+                        <span style={{ fontSize: '11px', color: '#767077', flexShrink: 0 }} data-testid="field-outside-body">
+                          {t('placeholder.sidebar.outsideBody')}
+                        </span>
+                      )}
+                      <span className={s.count} data-row-count>x{ph.occurrences.length + (ph.outsideBody?.count ?? 0)}</span>
                       <span className={s.actions} data-row-actions>
                         <button
                           type="button"

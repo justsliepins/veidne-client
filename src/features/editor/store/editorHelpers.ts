@@ -104,13 +104,16 @@ function scanPlaceholderMatches(tokens: WordToken[]): PlaceholderMatch[] {
     }
 
     const fullText = paraTokens.map(t => t.text).join('');
-    const re = /\{\{([^{}]+)\}\}/g;
+    // Exactly {{Name}}, Veidne's own form, with no space inside the braces.
+    // {{ Name }} with spaces comes from other tools and is offered by the
+    // merge import instead (mergeImport.ts), which rewrites it to this form.
+    const re = /\{\{([^{}\s](?:[^{}]*[^{}\s])?)\}\}/g;
     let match;
 
     while ((match = re.exec(fullText)) !== null) {
       const matchStart = match.index;
       const matchEnd = match.index + match[0].length;
-      const name = match[1].trim();
+      const name = match[1];
       if (!name) continue;
       // Handlebars control structures from another tool's template are not
       // merge fields. Left alone they become literal text in the output.
@@ -146,8 +149,11 @@ export function computePlaceholderCoverage(tokens: WordToken[]): Map<string, Tok
   return coverage;
 }
 
-export function detectTemplatePlaceholders(tokens: WordToken[]): Placeholder[] {
-  const found = scanPlaceholderMatches(tokens).map(({ name, claims }) => ({
+/** Exact {{Name}} fields in the body tokens. With `names`, only those names:
+ *  the merge import decides which {{Name}} are fields (not, for example, the
+ *  {{name}} inside another tool's {{#each}} loop). */
+export function detectTemplatePlaceholders(tokens: WordToken[], names?: ReadonlySet<string>): Placeholder[] {
+  const found = scanPlaceholderMatches(tokens).filter(m => !names || names.has(m.name)).map(({ name, claims }) => ({
     name,
     tokenIds: claims.map(c => c.token.id),
   }));

@@ -35,7 +35,9 @@ export function GenerateErrorPanel({ failure, attempt, onRetry, onGoToFields, on
     ? t('error.generate.cause.fieldName', { name: failure.name, char: failure.char })
     : failure.kind === 'template'
       ? t('error.generate.cause.template', { explanation: failure.explanation, part: partName(failure.file) })
-      : t('error.generate.cause.unknown');
+      : failure.kind === 'controls'
+        ? t('error.generate.cause.controls')
+        : t('error.generate.cause.unknown');
 
   const report = (primary: boolean) => (
     <button type="button" className={primary ? s.primary : s.secondary} onClick={onReport}>
