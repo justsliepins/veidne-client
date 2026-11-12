@@ -264,6 +264,7 @@ test('{{ Customer }} with spaces and {{Customer}} in a header: offered, merge wi
   const rows = await dialogRows(page);
   expect(rows).toEqual([{ name: 'Customer', family: 'doubleBrace', checked: true }]);
   await expect(dialog(page).getByTestId('import-row-shape')).toHaveText('{{ Name }}');
+  await expect(dialog(page).getByTestId('import-way-back')).toHaveText('Undo cannot reverse this step. To go back, upload your original file again.');
   const dialogText = await dialog(page).innerText();
   await dialog(page).getByRole('button', { name: 'Add 1 field' }).click();
   await expect(page.getByText(/Fields \(3\)/)).toBeVisible();
@@ -493,7 +494,7 @@ test('six rapid Generate clicks start one run and report one generate_started', 
   expect(events.filter((e) => e.event === 'generate_failed')).toHaveLength(0);
 });
 
-// ── Veidne's own templates ──────────────────────────────────────────────────
+// ── Veidne's own templates, deleting header fields, the loop dialog ────────
 
 /** A fresh page with no saved project, as a second visit would be. */
 async function freshPage(browser: Browser): Promise<{ page: Page; close: () => Promise<void> }> {
@@ -559,4 +560,58 @@ test('row labels show the syntax as it is written in the file', async ({ page })
   const shapes = await dialog(page).getByTestId('import-row-shape').allInnerTexts();
   // Name is written once as << Name >> and once as <<Name>>.
   expect(shapes).toEqual(['<< Name >>, <<Name>>', '<<Name>>', '<<Name>>']);
+});
+
+test('deleting a header-only field says what will stay in every document; body fields delete at once', async ({ page }) => {
+  await upload(page, 'word-mergefield-header');
+  await dialog(page).getByRole('button', { name: 'Add 2 fields' }).click();
+  await expect(page.getByText(/Fields \(3\)/)).toBeVisible();
+  const warn = page.getByTestId('delete-outside-dialog');
+
+  await page.getByRole('button', { name: 'Delete field Company' }).click({ force: true });
+  await expect(warn).toBeVisible();
+  await expect(warn).toContainText('Company is only in a header, which the editor does not show.');
+  await expect(warn.getByTestId('delete-outside-result')).toHaveText('Every generated document will show {{Company}} there, exactly as written.');
+  const text = await warn.innerText();
+  await warn.getByRole('button', { name: 'Keep field' }).click();
+  await expect(warn).toHaveCount(0);
+  await expect(page.getByText(/Fields \(3\)/)).toBeVisible();
+
+  await page.getByRole('button', { name: 'Delete field Reference_No' }).click({ force: true });
+  await expect(warn).toContainText('Reference_No is only in a footer');
+  await warn.getByRole('button', { name: 'Keep field' }).click();
+
+  await page.getByRole('button', { name: 'Delete field Company' }).click({ force: true });
+  await warn.getByRole('button', { name: 'Delete field' }).click();
+  await expect(page.getByText(/Fields \(2\)/)).toBeVisible();
+  const docs = await mergeAndDownload(page, 'word-mergefield-header');
+  record('delete-header-field', { text, docs });
+  // What the warning said: the tag stays, as it does for a body field.
+  expect(docs[0]['word/header1.xml']).toBe('Prepared for {{Company}}');
+  expect(docs[0]['word/footer1.xml']).toBe('Ref. R-1001');
+});
+
+test('a field that is also in the body deletes without the warning', async ({ page }) => {
+  await upload(page, 'double-brace');
+  await dialog(page).getByRole('button', { name: 'Add 1 field' }).click();
+  await expect(page.getByText(/Fields \(3\)/)).toBeVisible();
+  // Customer: in the body and in the header.
+  await page.getByRole('button', { name: 'Delete field Customer' }).click({ force: true });
+  await expect(page.getByText(/Fields \(2\)/)).toBeVisible();
+  await expect(page.getByTestId('delete-outside-dialog')).toHaveCount(0);
+  // A body-only field too.
+  await page.getByRole('button', { name: 'Delete field Due Date' }).click({ force: true });
+  await expect(page.getByText(/Fields \(1\)/)).toBeVisible();
+  await expect(page.getByTestId('delete-outside-dialog')).toHaveCount(0);
+});
+
+test('whole-body loop dialog: removing the tags is the one primary action', async ({ page }) => {
+  await upload(page, 'handlebars-each-whole');
+  await expect(dialog(page)).toBeVisible();
+  const bg = (name: string) => dialog(page).getByRole('button', { name }).evaluate((b) => getComputedStyle(b).backgroundColor);
+  const primary = await bg('Remove the two tags');
+  const cont = await bg('Continue');
+  expect(primary).not.toBe(cont);
+  expect(cont).toMatch(/rgba\(0, 0, 0, 0\)|rgb\(255, 255, 255\)|transparent/);
+  await expect(dialog(page).getByTestId('import-way-back')).toBeVisible();
 });

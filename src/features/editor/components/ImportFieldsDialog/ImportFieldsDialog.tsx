@@ -132,6 +132,12 @@ export function ImportFieldsDialog({ offer, onConfirm, onDismiss, onRemoveLoop }
           </>
         )}
 
+        {/* Confirming rewrites the template and starts the undo history
+            again, so the one way back is the original file. */}
+        {(candidates.length > 0 || wholeBodyLoop) && (
+          <p className={s.note} data-testid="import-way-back">{t('import.wayBack')}</p>
+        )}
+
         <div className={s.buttonRow}>
           {candidates.length > 0 ? (
             <>
@@ -142,7 +148,9 @@ export function ImportFieldsDialog({ offer, onConfirm, onDismiss, onRemoveLoop }
               </VeidneButton>
             </>
           ) : (
-            <VeidneButton appearance="primary" onClick={onDismiss}>{t('import.continue')}</VeidneButton>
+            // With a whole-body loop, removing its two tags is the recommended
+            // action; going on without it leaves Generate refused.
+            <VeidneButton appearance={wholeBodyLoop ? 'secondary' : 'primary'} onClick={onDismiss}>{t('import.continue')}</VeidneButton>
           )}
         </div>
       </DialogSurface>

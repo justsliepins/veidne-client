@@ -5,6 +5,9 @@ import { ChevronRight16Regular, ChevronLeft16Regular, ChevronUp16Regular, Chevro
 import { t } from '@/i18n/i18n';
 import { VeidneButton } from '@/shared/components/VeidneButton/VeidneButton';
 import { useEditorStore } from '../../store/editorStore';
+import { isOutsideOnly } from '../../store/editorHelpers';
+import type { Placeholder } from '../../utils/types';
+import { DeleteOutsideFieldDialog } from '../DeleteOutsideFieldDialog';
 import { getPlaceholderColor } from '../../utils/placeholderColors';
 import { useStyles } from './PlaceholderSidebar.styles';
 
@@ -30,6 +33,11 @@ export function PlaceholderSidebar({ onScrollTo, collapsed, onToggleCollapse, on
   );
 
   const [editingId, setEditingId] = useState<string | null>(null);
+  // A header- or footer-only field waiting for the user to confirm its delete.
+  const [pendingDelete, setPendingDelete] = useState<Placeholder | null>(null);
+  const requestDelete = (ph: Placeholder) => {
+    if (isOutsideOnly(ph)) setPendingDelete(ph); else deletePlaceholder(ph.id);
+  };
   const [draft, setDraft] = useState('');
   // Below md the FAB toggle is hidden and the header bar is the toggle; at or
   // above md the FAB is the visible toggle, so the header (which also fires the
@@ -152,7 +160,7 @@ export function PlaceholderSidebar({ onScrollTo, collapsed, onToggleCollapse, on
                         <button
                           type="button"
                           className={s.iconBtn}
-                          onClick={(e) => { e.stopPropagation(); deletePlaceholder(ph.id); }}
+                          onClick={(e) => { e.stopPropagation(); requestDelete(ph); }}
                           aria-label={t('placeholder.field.deleteNamed', { name: ph.name })}
                         >
                           <Delete16Regular />
@@ -174,6 +182,9 @@ export function PlaceholderSidebar({ onScrollTo, collapsed, onToggleCollapse, on
           </div>
         )}
       </div>
+      <DeleteOutsideFieldDialog field={pendingDelete}
+        onDelete={() => { if (pendingDelete) deletePlaceholder(pendingDelete.id); setPendingDelete(null); }}
+        onCancel={() => setPendingDelete(null)} />
     </>
   );
 }

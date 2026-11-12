@@ -173,3 +173,10 @@ export function detectTemplatePlaceholders(tokens: WordToken[], names?: Readonly
 
   return placeholders;
 }
+
+/** A text field that is only in headers or footers, which the editor does not
+ *  show. Deleting it leaves its {{tag}} in those parts, unseen until the
+ *  documents are opened, so the delete asks first. */
+export function isOutsideOnly(ph: Placeholder): boolean {
+  return ph.type !== 'image' && ph.occurrences.length === 0 && !!ph.outsideBody;
+}
