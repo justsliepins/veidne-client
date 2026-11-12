@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import JSZip from 'jszip';
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect, type Browser, type Page } from '@playwright/test';
 import { generateDocument } from '../src/features/generator/utils/documentGenerator';
 
 // End to end through the real UI for every merge-import fixture: what the
@@ -180,19 +180,20 @@ test('\\b and \\f text with leading punctuation is kept exactly in the editor, t
   expectClean(docs);
 });
 
-test('MERGEFIELDs in a header and a footer, {{ }} in a fourth header: import and merge into those parts', async ({ page }) => {
+test('MERGEFIELDs in a header and a footer, {{Name}} in a fourth header: import and merge into those parts', async ({ page }) => {
   await upload(page, 'word-mergefield-header');
   await expect(dialog(page)).toBeVisible();
+  // Exact {{Department}} in header4 is Veidne's own form: no question.
+  await expect(dialog(page).getByTestId('import-auto')).toHaveText('Already a Veidne field: Department.');
   const rows = await dialogRows(page);
   expect(rows).toEqual([
     { name: 'Company', family: 'mergefield', checked: true },
-    { name: 'Department', family: 'doubleBrace', checked: true },
     { name: 'Reference_No', family: 'mergefield', checked: true },
   ]);
   await expect(dialog(page)).toContainText('in a header');
   await expect(dialog(page)).toContainText('in a footer');
   const dialogText = await dialog(page).innerText();
-  await dialog(page).getByRole('button', { name: 'Add 3 fields' }).click();
+  await dialog(page).getByRole('button', { name: 'Add 2 fields' }).click();
   await expect(page.getByText(/Fields \(3\)/)).toBeVisible();
   await expect(page.getByTestId('field-outside-body')).toHaveCount(3);
   await expect(page.getByTestId('field-outside-body').first()).toHaveText('in header/footer');
@@ -210,7 +211,7 @@ test('MERGEFIELDs in a header and a footer, {{ }} in a fourth header: import and
 
 test('renaming an imported header field writes the new name into the header and merges', async ({ page }) => {
   await upload(page, 'word-mergefield-header');
-  await dialog(page).getByRole('button', { name: 'Add 3 fields' }).click();
+  await dialog(page).getByRole('button', { name: 'Add 2 fields' }).click();
   // Clicking a field's name in the Fields panel starts renaming it.
   await page.getByText('Company', { exact: true }).click();
   const input = page.getByRole('textbox', { name: /name/i });
@@ -257,10 +258,12 @@ test('<< Name >> chevrons, one split across runs: offered ticked, merge', async 
 test('{{ Customer }} with spaces and {{Customer}} in a header: offered, merge without stray braces', async ({ page }) => {
   await upload(page, 'double-brace');
   await expect(dialog(page)).toBeVisible();
-  // Exact {{Name}} in the body is Veidne's own form: already a field.
-  await expect(dialog(page).getByTestId('import-auto')).toHaveText('Already Veidne fields: Invoice_No, Due Date.');
+  // Exact {{Name}} is Veidne's own form, in the body and in the header: already
+  // a field. The spaced {{ Customer }} in the body is offered, labelled as written.
+  await expect(dialog(page).getByTestId('import-auto')).toHaveText('Already Veidne fields: Invoice_No, Due Date, Customer.');
   const rows = await dialogRows(page);
   expect(rows).toEqual([{ name: 'Customer', family: 'doubleBrace', checked: true }]);
+  await expect(dialog(page).getByTestId('import-row-shape')).toHaveText('{{ Name }}');
   const dialogText = await dialog(page).innerText();
   await dialog(page).getByRole('button', { name: 'Add 1 field' }).click();
   await expect(page.getByText(/Fields \(3\)/)).toBeVisible();
@@ -488,4 +491,72 @@ test('six rapid Generate clicks start one run and report one generate_started', 
   await expect.poll(() => events.filter((e) => e.event === 'generate_completed').length).toBe(1);
   expect(events.filter((e) => e.event === 'generate_started')).toHaveLength(1);
   expect(events.filter((e) => e.event === 'generate_failed')).toHaveLength(0);
+});
+
+// ── Veidne's own templates ──────────────────────────────────────────────────
+
+/** A fresh page with no saved project, as a second visit would be. */
+async function freshPage(browser: Browser): Promise<{ page: Page; close: () => Promise<void> }> {
+  const ctx = await browser.newContext({ storageState: { cookies: [], origins: [{ origin: BASE, localStorage: [{ name: 'veidne_consent', value: JSON.stringify({ v: 1, statistics: true, at: Date.now() }) }] }] } });
+  return { page: await ctx.newPage(), close: () => ctx.close() };
+}
+
+async function fieldList(page: Page): Promise<string[]> {
+  // By attribute, not role: while a dialog is closing the page is still
+  // aria-hidden, and role queries would find nothing.
+  return page.locator('button[aria-label^="Delete field "]').evaluateAll((bs) => bs.map((b) => {
+    const row = b.closest('[data-row-actions]')?.parentElement;
+    const where = row?.querySelector('[data-testid=field-outside-body]')?.textContent;
+    return (b.getAttribute('aria-label') ?? '').replace('Delete field ', '') + (where ? ` (${where})` : '');
+  }));
+}
+
+test('a template saved with header fields comes back with no import step and the same fields', async ({ page, browser }) => {
+  await upload(page, 'word-mergefield-header');
+  await dialog(page).getByRole('button', { name: 'Add 2 fields' }).click();
+  await expect(page.getByText(/Fields \(3\)/)).toBeVisible();
+  const before = await fieldList(page);
+  expect([...before].sort()).toEqual(['Company (in header/footer)', 'Department (in header/footer)', 'Reference_No (in header/footer)']);
+  await page.getByRole('button', { name: 'Add your data' }).last().click();
+  const downloadPromise = page.waitForEvent('download');
+  await page.getByText('Save template (.docx)').first().click();
+  const saved = path.join(OUT, 'saved-word-mergefield-header.docx');
+  fs.mkdirSync(OUT, { recursive: true });
+  await (await downloadPromise).saveAs(saved);
+
+  const second = await freshPage(browser);
+  try {
+    await second.page.goto(`${BASE}/start`);
+    await second.page.locator('input[type="file"]').setInputFiles(saved);
+    await expect(second.page.getByText(/Fields \(3\)/)).toBeVisible();
+    await expect(dialog(second.page)).toHaveCount(0);
+    expect(await fieldList(second.page)).toEqual(before);
+    const docs = await mergeAndDownload(second.page, 'word-mergefield-header');
+    expect(docs[0]['word/header1.xml']).toBe('Prepared for Acme SIA');
+    expect(docs[0]['word/footer1.xml']).toBe('Ref. R-1001');
+    expect(docs[0]['word/header4.xml']).toBe('Department: Sales');
+    expectClean(docs);
+  } finally { await second.close(); }
+});
+
+test('a Veidne template with a header tag split over runs: no question, and a rename reaches the header', async ({ page }) => {
+  await upload(page, 'veidne-header-split');
+  await expect(page.getByText(/Fields \(2\)/)).toBeVisible();
+  await expect(dialog(page)).toHaveCount(0);
+  expect(await fieldList(page)).toEqual(['Name', 'Company (in header/footer)']);
+  await page.getByText('Company', { exact: true }).click();
+  const input = page.getByRole('textbox', { name: /name/i });
+  await input.fill('Client');
+  await input.press('Enter');
+  const docs = await mergeAndDownload(page, 'veidne-header-split');
+  expect(docs[0]['word/header1.xml']).toBe('Prepared for Acme SIA');
+  expect(docs[0]['word/document.xml']).toBe('Dear Anna, / Thank you for your order.');
+  expectClean(docs);
+});
+
+test('row labels show the syntax as it is written in the file', async ({ page }) => {
+  await upload(page, 'chevron');
+  const shapes = await dialog(page).getByTestId('import-row-shape').allInnerTexts();
+  // Name is written once as << Name >> and once as <<Name>>.
+  expect(shapes).toEqual(['<< Name >>, <<Name>>', '<<Name>>', '<<Name>>']);
 });

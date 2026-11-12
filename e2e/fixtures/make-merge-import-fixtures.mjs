@@ -330,4 +330,14 @@ await makeDocx('word-mergefield-punctuation.docx', {
 });
 makeXlsx('word-mergefield-punctuation.xlsx', ['Title', 'Code'], [['Ms', 'X1'], ['Mr', 'Y2']]);
 
+// 15. A template saved from Veidne, with exact {{Name}} in the body and in a
+//     header, the header tag split over two runs the way Word leaves it after
+//     an edit. Exact {{Name}} is applied without a question in both places,
+//     and the split tag is joined so a rename reaches it.
+await makeDocx('veidne-header-split.docx', {
+  headers: { 'header1.xml': [p(t('Prepared for {{Com'), proof('spellStart'), t('pany}}'))] },
+  body: [p(t('Dear {{Name}},')), p(t('Thank you for your order.'))],
+});
+makeXlsx('veidne-header-split.xlsx', ['Name', 'Client'], [['Anna', 'Acme SIA'], ['Janis', 'Baltic Ltd']]);
+
 console.log(`wrote ${fs.readdirSync(DIR).length} files to ${DIR}`);

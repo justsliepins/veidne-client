@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { parseDocxDirect } from '../utils/docxDirectParser';
-import { analyzeTemplate, applyImport, outsideBodyFields, removeWholeBodyLoop, type ImportAnalysis, type ImportCandidate } from '../utils/mergeImport';
+import { analyzeTemplate, applyImport, joinSplitOutsideBodyTags, outsideBodyFields, removeWholeBodyLoop, type ImportAnalysis, type ImportCandidate } from '../utils/mergeImport';
 import type { ControlFinding, FieldFamily } from '../utils/placeholderDetector';
 import { setImageFieldTag, clearImageFieldTagsByName, imageFieldNameFromDescr } from '../utils/imageFieldXml';
 import { useDataStore } from '@/features/data/store/dataStore';
@@ -104,8 +104,10 @@ function buildFields(bytes: ArrayBuffer, tokens: WordToken[], names: string[], p
   const outside = outsideBodyFields(bytes, wanted);
   const byName = new Map(body.map(p => [p.name, p]));
   const prevByName = new Map(prev.filter(p => p.type !== 'image').map(p => [p.name, p]));
-  // Document order for body fields, then header-only fields in name order.
-  const ordered = [...body.map(p => p.name), ...names.filter(n => !byName.has(n) && outside.has(n))];
+  // Document order for body fields, then header-only fields in the order
+  // their parts are read (headers, then footers), so a saved template that is
+  // uploaded again lists them as they were.
+  const ordered = [...body.map(p => p.name), ...[...outside.keys()].filter(n => !byName.has(n))];
   const text: Placeholder[] = [];
   for (const name of ordered) {
     const found = byName.get(name);
@@ -135,10 +137,13 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   importOffer: null, templateControls: [],
 
   loadDocument: async (file) => {
-    const buf = await file.arrayBuffer();
-    // Nothing is rewritten here. Exact {{Name}} in the body is Veidne's own
-    // form and becomes a field as it always has; everything else another
-    // tool left in the template waits for the user's confirmation.
+    const original = await file.arrayBuffer();
+    // Exact {{Name}} is Veidne's own form and becomes a field wherever it is
+    // (body, header or footer); everything else another tool left in the
+    // template waits for the user's confirmation. The only change made here
+    // joins a header or footer {{Name}} split over several runs into one, so
+    // a rename reaches it; the text stays the same.
+    const buf = joinSplitOutsideBodyTags(original) ?? original;
     const analysis = analyzeTemplate(buf);
     const { tokens, pageLayout, paragraphStyles } = parseDocxDirect(buf);
     const detected = buildFields(buf, tokens, analysis.autoNames, []);

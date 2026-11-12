@@ -7,9 +7,9 @@ import {
 /**
  * Importing placeholders from another mail merge tool.
  *
- * Exact {{Name}} in the body is Veidne's own syntax (it is what "Download
- * template" writes), so it becomes a field on upload with no question asked,
- * as it always has. Everything else the detector finds is offered to the user
+ * Exact {{Name}} is Veidne's own syntax (it is what "Save template" writes),
+ * so it becomes a field on upload with no question asked, in the body as it
+ * always has and in headers and footers too. Everything else the detector finds is offered to the user
  * first, and nothing in the document changes until they confirm. On confirm,
  * each chosen occurrence is rewritten to a single {{Name}} run in place
  * (body, headers and footers alike), and the document is then loaded the way
@@ -36,11 +36,14 @@ export interface ImportCandidate {
   formats: ('date' | 'number')[];
   /** Ticked when the step opens. */
   preselected: boolean;
+  /** The syntax as it is written in the file, with the field name shown as
+   *  Name: "{{ Name }}", "<< Name >>", "{Name}". Empty for Word fields. */
+  shapes: string[];
 }
 
 export interface ImportAnalysis {
-  /** Fields that become Veidne fields without a question: exact {{Name}} in
-   *  the body, outside any loop. */
+  /** Fields that become Veidne fields without a question: exact {{Name}},
+   *  Veidne's own form, in the body, a header or a footer, outside any loop. */
   autoNames: string[];
   candidates: ImportCandidate[];
   controls: ControlFinding[];
@@ -77,33 +80,42 @@ function scan(bytes: ArrayBuffer): Scan {
   return { zip, parts, fields: all.filter((f) => !suppressed.has(f.family)) };
 }
 
-const isCanonicalBody = (f: LocatedField) => f.occurrence.canonical === true && f.occurrence.part === BODY_PART;
+// Exact {{Name}} is the form Veidne writes, so it is applied without a
+// question wherever it is: a template saved from Veidne with fields in its
+// header comes back with them, and the step is left for foreign syntax.
+const isCanonical = (f: LocatedField) => f.occurrence.canonical === true;
+
+/** "{{ Customer }}" -> "{{ Name }}": the delimiters and spacing as written. */
+function shapeOf(f: LocatedField): string | null {
+  if (f.family === 'mergefield') return null;
+  const raw = f.occurrence.raw.replace(/\s+/g, ' ');
+  const at = raw.indexOf(f.name);
+  return at < 0 ? null : raw.slice(0, at) + 'Name' + raw.slice(at + f.name.length);
+}
 
 const PART_ORDER: PartKind[] = ['body', 'header', 'footer'];
 
 export function analyzeTemplate(bytes: ArrayBuffer): ImportAnalysis {
   const { parts, fields } = scan(bytes);
-  const autoNames = [...new Set(fields.filter(isCanonicalBody).map((f) => f.name))];
-  const auto = new Set(autoNames);
+  const autoNames = [...new Set(fields.filter(isCanonical).map((f) => f.name))];
 
   const rows = new Map<string, ImportCandidate>();
   for (const f of fields) {
-    if (isCanonicalBody(f)) continue;
-    // {{Name}} in a header for a field the body already has is the same
-    // field, carried along without a question (a Veidne round trip).
-    if (f.occurrence.canonical && auto.has(f.name)) continue;
+    if (isCanonical(f)) continue;
     // A finding with no locator cannot be rewritten, so it is not offered.
     if (!f.loc) continue;
     const key = candidateKey(f.family, f.name);
     let row = rows.get(key);
     if (!row) {
-      row = { key, family: f.family, name: f.name, occurrences: 0, parts: [], formats: [], preselected: preselectedFamily(f.family) };
+      row = { key, family: f.family, name: f.name, occurrences: 0, parts: [], formats: [], preselected: preselectedFamily(f.family), shapes: [] };
       rows.set(key, row);
     }
     row.occurrences++;
     const kind = partKind(f.occurrence.part);
     if (!row.parts.includes(kind)) row.parts.push(kind);
     if (f.occurrence.format && !row.formats.includes(f.occurrence.format)) row.formats.push(f.occurrence.format);
+    const shape = shapeOf(f);
+    if (shape && !row.shapes.includes(shape)) row.shapes.push(shape);
   }
   for (const row of rows.values()) row.parts.sort((a, b) => PART_ORDER.indexOf(a) - PART_ORDER.indexOf(b));
 
@@ -196,6 +208,29 @@ function writeBack(s: Scan, changed: Set<LocatedPart>): ArrayBuffer {
 }
 
 /**
+ * Join exact {{Name}} tags in headers and footers that Word split over several
+ * runs (an edit, a spell-check mark or an rsid inside the tag) into one run,
+ * so a rename can rewrite them there (renameOutsideBodyTags reads one <w:t>).
+ * The text does not change, and the body is left alone: its fields sit on the
+ * editor's tokens. Returns null when nothing was split.
+ */
+export function joinSplitOutsideBodyTags(bytes: ArrayBuffer): ArrayBuffer | null {
+  const s = scan(bytes);
+  const changed = new Set<LocatedPart>();
+  for (const p of s.parts) {
+    if (p.part === BODY_PART) continue;
+    const edits = new Map<Element, NodeEdit[]>();
+    for (const f of p.fields) {
+      if (!f.occurrence.canonical || f.loc?.kind !== 'text' || f.loc.spans.length < 2) continue;
+      planText(f.loc.spans, `{{${f.name}}}`, edits);
+      changed.add(p);
+    }
+    applyTextEdits(edits);
+  }
+  return changed.size > 0 ? writeBack(s, changed) : null;
+}
+
+/**
  * Rewrite every occurrence of the chosen candidates to {{Name}}. Typed
  * placeholders are replaced in their own text (the first run's formatting
  * stays); a MERGEFIELD code is replaced by one run holding its \b text,
@@ -210,7 +245,7 @@ export function applyImport(bytes: ArrayBuffer, keys: Iterable<string>): ArrayBu
     const edits = new Map<Element, NodeEdit[]>();
     const fieldCodes: LocatedField[] = [];
     for (const f of p.fields) {
-      if (!f.loc || !chosen.has(candidateKey(f.family, f.name)) || isCanonicalBody(f)) continue;
+      if (!f.loc || !chosen.has(candidateKey(f.family, f.name)) || (f.occurrence.canonical && f.occurrence.part === BODY_PART)) continue;
       if (f.loc.kind === 'text') {
         // Already exactly {{Name}} in one <w:t>: nothing to do.
         if (f.occurrence.canonical && f.loc.spans.length === 1) continue;

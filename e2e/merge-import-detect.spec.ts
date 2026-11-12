@@ -49,12 +49,14 @@ const EXPECTED: Record<string, Summary> = {
     auto: [], candidates: ['mergefield:Title x1 body', 'mergefield:Code x1 body'], controls: [], wholeBodyLoop: null,
   },
   'word-mergefield-header': {
-    auto: [],
-    candidates: ['mergefield:Company x1 header', 'doubleBrace:Department x1 header', 'mergefield:Reference_No x1 footer'],
+    auto: ['Department'],
+    candidates: ['mergefield:Company x1 header', 'mergefield:Reference_No x1 footer'],
     controls: [], wholeBodyLoop: null,
   },
   'chevron': { auto: [], candidates: ['chevron:Name x2 body', 'chevron:Address x1 body', 'chevron:Date x1 body'], controls: [], wholeBodyLoop: null },
-  'double-brace': { auto: ['Invoice_No', 'Due Date'], candidates: ['doubleBrace:Customer x2 body+header'], controls: [], wholeBodyLoop: null },
+  // The header's exact {{Customer}} is Veidne's own form, applied without a
+  // question; only the spaced {{ Customer }} in the body is offered.
+  'double-brace': { auto: ['Invoice_No', 'Due Date', 'Customer'], candidates: ['doubleBrace:Customer x1 body'], controls: [], wholeBodyLoop: null },
   'single-brace': {
     auto: [],
     candidates: ['singleBrace:Name x1 body (unticked)', 'singleBrace:Order_No x1 body (unticked)', 'singleBrace:City x1 body (unticked)'],
@@ -100,6 +102,8 @@ const EXPECTED: Record<string, Summary> = {
     wholeBodyLoop: null,
   },
   'plain': { auto: [], candidates: [], controls: [], wholeBodyLoop: null },
+  // A Veidne template: exact {{Name}} in the body and the header, no question.
+  'veidne-header-split': { auto: ['Name', 'Company'], candidates: [], controls: [], wholeBodyLoop: null },
   'prose-braces-percent': {
     auto: [], candidates: ['percent:PATH x1 body (unticked)', 'percent:APPDATA x1 body (unticked)'], controls: [], wholeBodyLoop: null,
   },

@@ -114,7 +114,7 @@ export function ImportFieldsDialog({ offer, onConfirm, onDismiss, onRemoveLoop }
                     label={(
                       <span className={s.rowLabel}>
                         <span className={s.rowName} data-testid="import-row-name">{c.name}</span>
-                        <span className={s.chip}>{t(`import.family.${c.family}`)}</span>
+                        <span className={s.chip} data-testid="import-row-shape">{c.shapes.length > 0 ? c.shapes.join(', ') : t(`import.family.${c.family}`)}</span>
                         <span className={s.rowMeta}>{tCount(c.occurrences, 'import.row.places')}, {whereText(c)}</span>
                       </span>
                     )}
